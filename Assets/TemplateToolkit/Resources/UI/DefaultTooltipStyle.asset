@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d8ff8d941ca49b4182630ca7066bed9, type: 3}
+  m_Name: DefaultTooltipStyle
+  m_EditorClassIdentifier: Assembly-CSharp::TooltipStyle
+  backgroundColor: {r: 0.6509434, g: 0.6509434, b: 0.6509434, a: 0.95}
+  titleColor: {r: 0, g: 0, b: 0, a: 1}
+  titleFontSize: 18
+  titleFontStyle: 1
+  contentColor: {r: 0.2830189, g: 0.2830189, b: 0.2830189, a: 1}
+  contentFontSize: 14
+  contentFontStyle: 0
+  titleBottomPadding: 5
+  paddingLeft: 10
+  paddingRight: 10
+  paddingTop: 10
+  paddingBottom: 10
