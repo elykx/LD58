@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build project
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      # Free Disk Space
+      - name: Free Disk Space
+        run: |
+          echo "=== Before cleanup ==="
+          df -h
+          sudo swapoff -a || true
+          sudo rm -f /swapfile || true
+          sudo apt-get clean
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache
+          echo "=== After cleanup ==="
+          df -h
+
+      # Cache Unity Library
+      - uses: actions/cache@v3
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Assets/**', 'Packages/**', 'ProjectSettings/**') }}
+          restore-keys: |
+            Library-
+
+      # Build Unity project
+      - name: Build project
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          targetPlatform: WebGL
+
+      # Zip release build (using built-in zip instead of docker action)
+      - name: Zip release build
+        run: |
+          cd build/WebGL
+          zip -qq -r ../../html.zip .
+
+      # Upload to itch.io
+      - name: Upload to itch
+        uses: Ayowel/butler-to-itch@v1
+        with:
+          butler_key: ${{ secrets.BUTLER_CREDENTIALS }}
+          itch_user: ${{ secrets.ITCH_USER }}
+          itch_game: ${{ secrets.ITCH_GAME }}
+          version: ${{ github.ref_name }}
+          files: html.zip
