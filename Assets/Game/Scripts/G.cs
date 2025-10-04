@@ -2,5 +2,6 @@ public static class G
 {
     public static Main main;
     public static UI ui;
-    internal static UIDebug uiDebug;
+    public static UIDebug uiDebug;
+    public static ShelfManager shelfManager;
 }

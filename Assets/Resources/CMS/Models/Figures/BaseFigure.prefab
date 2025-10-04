@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8625519500497795034
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1160032519289462695}
+  - component: {fileID: 8631049327428407911}
+  m_Layer: 0
+  m_Name: BaseFigure
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1160032519289462695
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8625519500497795034}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8631049327428407911
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8625519500497795034}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1729a46f79086449a991b5512530e60, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CMS::CMSEntityPfb
+  idCMS: CMS/Models/Figures/BaseFigure
+  Components:
+  - rid: 6428437763440771158
+  - rid: 6428437763440771160
+  - rid: 6428437763440771161
+  - rid: 6428437763440771162
+  - rid: 6428437763440771163
+  references:
+    version: 2
+    RefIds:
+    - rid: 6428437763440771158
+      type: {class: TagName, ns: , asm: Assembly-CSharp}
+      data:
+        name: base
+        description: descr
+    - rid: 6428437763440771160
+      type: {class: TagPosition, ns: , asm: Assembly-CSharp}
+      data:
+        shelfPosition: {x: 0, y: 0}
+    - rid: 6428437763440771161
+      type: {class: TagSkills, ns: , asm: Assembly-CSharp}
+      data:
+        skills:
+        - skillName: 1
+          description: 1
+          cooldown: 1
+          type: 0
+    - rid: 6428437763440771162
+      type: {class: TagSprite, ns: Runtime, asm: CMS}
+      data:
+        sprite: {fileID: 21300000, guid: eaa56a7417ef26a4e835850ad70b95b3, type: 3}
+    - rid: 6428437763440771163
+      type: {class: TagStats, ns: , asm: Assembly-CSharp}
+      data:
+        healthVal: 1
+        damageVal: 1
+        speed: 1
+        defense: 1
