@@ -4,4 +4,6 @@ public static class G
     public static UI ui;
     public static UIDebug uiDebug;
     public static ShelfManager shelfManager;
+    public static Timer timer;
+    public static BattleSystem battleSystem;
 }

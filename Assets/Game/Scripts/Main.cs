@@ -27,5 +27,12 @@ public class Main : MonoBehaviour
             UIDebug.Log(fig.data.name, Color.softRed);
 
         }
+
+    }
+
+    void Update()
+    {
+        string time = G.timer.GetTimeFormatted(); 
+        G.ui.timer.text = time;
     }
 }
