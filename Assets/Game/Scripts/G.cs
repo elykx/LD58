@@ -8,4 +8,5 @@ public static class G
     public static Timer timer;
     public static BattleSystem battleSystem;
     public static ShopFigure shopFigures;
+    public static FigureManager figureManager;
 }

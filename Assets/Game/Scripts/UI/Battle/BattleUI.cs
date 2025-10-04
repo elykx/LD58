@@ -50,8 +50,9 @@ public class BattleUI : MonoBehaviour
         {
             var icon = Instantiate(figureIconPrefab, turnOrderList.transform);
             var figIcon = icon.GetComponent<FigureIcon>();
-            figIcon.SetIcon(figure.figureData.sprite);
-            if (figure.figureData.isEnemy)
+            var figData = G.figureManager.GetFigure(figure.FigureId);
+            figIcon.SetIcon(figData.sprite);
+            if (figData.isEnemy)
             {
                 figIcon.SetBackground(Color.red);
 
@@ -59,8 +60,8 @@ public class BattleUI : MonoBehaviour
             var triggerTooltip = icon.GetComponent<TooltipTrigger>();
             if (triggerTooltip != null)
             {
-                triggerTooltip.tooltipTitle = figure.figureData.name;
-                triggerTooltip.tooltipContent = figure.figureData.currentHealth + "/" + figure.figureData.maxHealth;
+                triggerTooltip.tooltipTitle = figData.name;
+                triggerTooltip.tooltipContent = figData.currentHealth + "/" + figData.maxHealth;
             }
 
         }

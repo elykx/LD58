@@ -1,31 +1,29 @@
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
-public class ShelfFigure : MonoBehaviour
+public class ViewShelfFigure : MonoBehaviour
 {
-    public Figure data;
-    private Vector3 offset;
-    private Camera cam;
-
+    public string FigureId;
     [HideInInspector] public ShelfSlot currentSlot;
+    private Vector3 offset;
 
     private TooltipTrigger tooltip;
     private bool isDragging = false;
-    private int originalLayer;
 
     private void Awake()
     {
-        cam = Camera.main;
         gameObject.layer = LayerMask.NameToLayer("Dragging");
     }
 
     void Start()
     {
         tooltip = GetComponent<TooltipTrigger>();
+        UpdateTooltip();
     }
 
     private void UpdateTooltip()
     {
+        Figure data = G.figureManager.GetFigure(FigureId);
         if (tooltip != null)
         {
             // Заголовок: имя + уровень
@@ -46,7 +44,6 @@ public class ShelfFigure : MonoBehaviour
 
     private void Update()
     {
-        // Начало драга
         if (Input.GetMouseButtonDown(0) && !isDragging)
         {
             if (IsMouseOverThis())
@@ -54,20 +51,20 @@ public class ShelfFigure : MonoBehaviour
                 UpdateTooltip();
                 StartDrag();
                 G.shelfManager.ShowSlotsSprites();
+                G.shopFigures.ShowSellArea();
             }
         }
 
-        // Процесс драга
         if (isDragging && Input.GetMouseButton(0))
         {
             DragUpdate();
         }
 
-        // Конец драга
         if (Input.GetMouseButtonUp(0) && isDragging)
         {
             EndDrag();
             G.shelfManager.HideSlotsSprites();
+            G.shopFigures.HideSellArea();
         }
     }
 
@@ -75,7 +72,6 @@ public class ShelfFigure : MonoBehaviour
     {
         Vector2 mousePos = GetMouseWorldPos();
 
-        // Кастим луч только по слою фигурок
         int figureMask = 1 << gameObject.layer;
         RaycastHit2D hit = Physics2D.Raycast(mousePos, Vector2.zero, 0f, figureMask);
 
@@ -90,9 +86,6 @@ public class ShelfFigure : MonoBehaviour
         if (currentSlot != null)
             currentSlot.Clear();
 
-        // Запоминаем слой и переносим в "Dragging"
-        originalLayer = gameObject.layer;
-        gameObject.layer = LayerMask.NameToLayer("Dragging");
     }
 
     private void DragUpdate()
@@ -104,14 +97,19 @@ public class ShelfFigure : MonoBehaviour
     {
         isDragging = false;
 
-        // Возвращаем исходный слой
-        gameObject.layer = originalLayer;
-
-        // Ищем ближайший слот
         ShelfSlot nearest = FindNearestSlot();
         if (nearest != null && nearest.IsEmpty)
         {
             nearest.PlaceFigure(this);
+        }
+        else if (nearest == null)
+        {
+            SellArea sellZone = FindSellZone();
+            if (sellZone != null)
+            {
+                G.shopFigures.SellFigure(FigureId);
+                Destroy(gameObject);
+            }
         }
         else if (currentSlot != null)
         {
@@ -121,9 +119,10 @@ public class ShelfFigure : MonoBehaviour
 
     private Vector3 GetMouseWorldPos()
     {
+        Camera camera = Camera.main;
         Vector3 mousePos = Input.mousePosition;
-        mousePos.z = -cam.transform.position.z;
-        return cam.ScreenToWorldPoint(mousePos);
+        mousePos.z = -camera.transform.position.z;
+        return camera.ScreenToWorldPoint(mousePos);
     }
 
     private ShelfSlot FindNearestSlot()
@@ -138,6 +137,31 @@ public class ShelfFigure : MonoBehaviour
         foreach (var hit in hits)
         {
             ShelfSlot slot = hit.GetComponent<ShelfSlot>();
+            if (slot != null)
+            {
+                float dist = Vector2.Distance(transform.position, slot.transform.position);
+                if (dist < minDist)
+                {
+                    minDist = dist;
+                    nearest = slot;
+                }
+            }
+        }
+
+        return nearest;
+    }
+
+    private SellArea FindSellZone()
+    {
+        float radius = 0.5f;
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius);
+
+        SellArea nearest = null;
+        float minDist = float.MaxValue;
+
+        foreach (var hit in hits)
+        {
+            SellArea slot = hit.GetComponent<SellArea>();
             if (slot != null)
             {
                 float dist = Vector2.Distance(transform.position, slot.transform.position);

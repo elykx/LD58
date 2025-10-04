@@ -5,22 +5,23 @@ public class ShelfManager : MonoBehaviour
 {
     [Header("Слоты шкафа")]
     [SerializeField] private List<ShelfSlot> slots;
-    public ShelfFigure baseFigure;
 
     void Awake()
     {
         G.shelfManager = this;
     }
 
-    public bool AddFigureToSlot(ShelfFigure figure, int slotIndex)
+    public bool AddFigureToSlot(string figureId, int slotIndex)
     {
-        ShelfFigure newFigure = Instantiate(figure);
-        newFigure.gameObject.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-
         if (slotIndex < 0 || slotIndex >= slots.Count) return false;
 
         ShelfSlot slot = slots[slotIndex];
         if (!slot.IsEmpty) return false;
+
+        var prefab = G.figureManager.viewShelfFigurePrefab;
+        var newFigure = Instantiate(prefab);
+        newFigure.FigureId = figureId;
+        newFigure.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
 
         slot.PlaceFigure(newFigure);
         return true;
@@ -37,13 +38,18 @@ public class ShelfManager : MonoBehaviour
         return true;
     }
 
-    public bool AddFigureToFirstEmpty(ShelfFigure figure)
+    public bool AddFigureToFirstEmpty(string figureId)
     {
         foreach (var slot in slots)
         {
             if (slot.IsEmpty)
             {
-                slot.PlaceFigure(figure);
+                var prefab = G.figureManager.viewShelfFigurePrefab;
+                var newFigure = Instantiate(prefab);
+                newFigure.FigureId = figureId;
+                newFigure.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+
+                slot.PlaceFigure(newFigure);
                 return true;
             }
         }
@@ -55,7 +61,7 @@ public class ShelfManager : MonoBehaviour
         return slots.IndexOf(slot);
     }
 
-    public ShelfFigure GetFigureFromSlot(int slotIndex)
+    public ViewShelfFigure GetFigureFromSlot(int slotIndex)
     {
         if (slotIndex < 0 || slotIndex >= slots.Count) return null;
         return slots[slotIndex].currentFigure;
@@ -65,7 +71,7 @@ public class ShelfManager : MonoBehaviour
     {
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i].currentFigure != null && slots[i].currentFigure.data.id == figure.id)
+            if (slots[i].currentFigure != null && slots[i].currentFigure.FigureId == figure.id)
                 return i;
         }
         return -1;
@@ -75,7 +81,7 @@ public class ShelfManager : MonoBehaviour
     {
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i].currentFigure != null && slots[i].currentFigure.data.id == figure.id)
+            if (slots[i].currentFigure != null && slots[i].currentFigure.FigureId == figure.id)
                 RemoveFigureFromSlot(i);
         }
     }
@@ -90,12 +96,12 @@ public class ShelfManager : MonoBehaviour
             }
         }
     }
-    
+
     public void HideSlotsSprites()
     {
         foreach (var slot in slots)
         {
             slot.HideSprite();
         }
-    }   
+    }
 }

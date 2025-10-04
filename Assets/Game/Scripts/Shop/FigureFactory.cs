@@ -38,7 +38,7 @@ public static class FigureFactory
             return new Figure("archer", "Archer", 20, 8, 5, 2, 1)
             {
                 cost = 12,
-                // sprite = Resources.Load<Sprite>("Sprites/archer")
+                sprite = Resources.Load<Sprite>("Sprites/archer")
             };
         }
 

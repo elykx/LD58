@@ -26,14 +26,25 @@ public class Main : MonoBehaviour
         G.timer.StartDay();
 
         // Debug start figures //TODO: add real figures
-        G.shelfManager.AddFigureToSlot(G.shelfManager.baseFigure, 1);
-        G.shelfManager.AddFigureToSlot(G.shelfManager.baseFigure, 3);
+        InitDefaultPlayerFiguresInventory();
+    }
+
+    private void InitDefaultPlayerFiguresInventory()
+    {
+        var enemy1 = new Figure("skeleton", "Скелет", 500, 15, 4, 5, 1);
+        enemy1.skills.Add(new Skill("Удар", Skill.SkillType.Attack, 30, 1));
+        G.figureManager.AddFigure(FigureConsts.baseFigure);
+        G.figureManager.AddFigure(enemy1);
+
+        G.shelfManager.AddFigureToSlot(FigureConsts.baseFigure.id, 1);
+        G.shelfManager.AddFigureToSlot(FigureConsts.baseFigure.id, 3);
     }
 
     void Update()
     {
         string time = G.timer.GetTimeFormatted();
         G.ui.timer.text = time;
+        G.ui.money.text = StringUtils.FormatNumber(G.playerData.money);
 
         // Debug // TODO: remove
         if (Input.GetKeyUp(KeyCode.F))
@@ -53,7 +64,7 @@ public class Main : MonoBehaviour
         {
             var enemy1 = new Figure("skeleton", "Скелет", 500, 15, 4, 5, 1);
             enemy1.skills.Add(new Skill("Удар", Skill.SkillType.Attack, 30, 1));
-            G.battleSystem.StartBattle(new LevelData("test", 1, new List<Figure>(new Figure[] { enemy1 }), new BattleReward(0, 0, new List<string>())));
+            G.battleSystem.StartBattle(new LevelData("test", 1, new List<string>(new string[] { "skeleton" }), new BattleReward(0, 0, new List<string>())));
         }
         else
         {

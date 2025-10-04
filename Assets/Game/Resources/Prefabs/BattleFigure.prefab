@@ -103,7 +103,7 @@ GameObject:
   - component: {fileID: 3580029559915895704}
   - component: {fileID: 7510965750734053750}
   m_Layer: 0
-  m_Name: BattleFig
+  m_Name: BattleFigure
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

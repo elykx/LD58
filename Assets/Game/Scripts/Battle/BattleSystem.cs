@@ -28,9 +28,9 @@ public class BattleSystem : MonoBehaviour
     public UnityEvent<BattleReward> OnBattleVictory;
     public UnityEvent OnBattleDefeat;
 
-    private List<BattleFigureView> playerViews = new();
-    private List<BattleFigureView> enemyViews = new();
-    private Queue<BattleFigureView> turnOrder = new();
+    public List<BattleFigureView> playerViews = new();
+    public List<BattleFigureView> enemyViews = new();
+    public Queue<BattleFigureView> turnOrder = new();
     private BattleFigureView currentFighter;
     private Skill selectedSkill;
 
@@ -99,19 +99,19 @@ public class BattleSystem : MonoBehaviour
     // 1. Собрать мои фигурки
     private void PlayerFigures()
     {
-        List<Figure> playerFigures = new();
+        List<string> playerFigures = new();
         var fig1 = G.shelfManager.GetFigureFromSlot(0);
         if (fig1 != null)
-            playerFigures.Add(fig1.data);
+            playerFigures.Add(fig1.FigureId);
         var fig2 = G.shelfManager.GetFigureFromSlot(1);
         if (fig2 != null)
-            playerFigures.Add(fig2.data);
+            playerFigures.Add(fig2.FigureId);
         var fig3 = G.shelfManager.GetFigureFromSlot(2);
         if (fig3 != null)
-            playerFigures.Add(fig3.data);
+            playerFigures.Add(fig3.FigureId);
         var fig4 = G.shelfManager.GetFigureFromSlot(3);
         if (fig4 != null)
-            playerFigures.Add(fig4.data);
+            playerFigures.Add(fig4.FigureId);
 
         if (playerFigures.Count == 0)
         {
@@ -127,19 +127,15 @@ public class BattleSystem : MonoBehaviour
     // 2. Собрать врагов из уровня
     private void EnemyFigures(LevelData level)
     {
-        // Загружаем врагов из уровня
-        List<Figure> enemyFigures = level.enemies;
-
-        // Расставляем команды
-        SetupTeam(enemyFigures.ToArray(), true, enemyPositions, enemyViews);
+        SetupTeam(level.enemies.ToArray(), true, enemyPositions, enemyViews);
     }
 
-    private void SetupTeam(Figure[] figures, bool isEnemy, Transform[] positions, List<BattleFigureView> list)
+    private void SetupTeam(string[] figures, bool isEnemy, Transform[] positions, List<BattleFigureView> list)
     {
         list.Clear();
         for (int i = 0; i < figures.Length && i < positions.Length; i++)
         {
-            figures[i].isEnemy = isEnemy;
+            G.figureManager.GetFigure(figures[i]).isEnemy = isEnemy;
             var view = Instantiate(battleFigurePrefab, positions[i]).GetComponent<BattleFigureView>();
             view.Initialize(figures[i]);
             list.Add(view);
@@ -152,11 +148,11 @@ public class BattleSystem : MonoBehaviour
         turnOrder.Clear();
 
         var allViews = new List<BattleFigureView>();
-        allViews.AddRange(playerViews.Where(v => v.figureData.IsAlive()));
-        allViews.AddRange(enemyViews.Where(v => v.figureData.IsAlive()));
+        allViews.AddRange(playerViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()));
+        allViews.AddRange(enemyViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()));
 
         var sortedViews = allViews
-            .OrderByDescending(v => v.figureData.speed + UnityEngine.Random.Range(-2, 3))
+            .OrderByDescending(v => G.figureManager.GetFigure(v.FigureId).speed + UnityEngine.Random.Range(-2, 3))
             .ToList();
 
         foreach (var view in sortedViews)
@@ -171,7 +167,7 @@ public class BattleSystem : MonoBehaviour
     void NextTurn()
     {
         // Проверяем условия победы/поражения
-        if (!playerViews.Any(v => v.figureData.IsAlive()))
+        if (!playerViews.Any(v => G.figureManager.GetFigure(v.FigureId).IsAlive()))
         {
             state = BattleState.Defeat;
             battleUI.SetBattleState(state);
@@ -180,7 +176,7 @@ public class BattleSystem : MonoBehaviour
             G.main.EndBattle();
             return;
         }
-        if (!enemyViews.Any(v => v.figureData.IsAlive()))
+        if (!enemyViews.Any(v => G.figureManager.GetFigure(v.FigureId).IsAlive()))
         {
             state = BattleState.Victory;
             battleUI.SetBattleState(state);
@@ -198,9 +194,8 @@ public class BattleSystem : MonoBehaviour
 
         // Берём следующего бойца из очереди
         currentFighter = turnOrder.Dequeue();
-
         // Если боец мёртв, переходим к следующему
-        if (!currentFighter.figureData.IsAlive())
+        if (!G.figureManager.GetFigure(currentFighter.FigureId).IsAlive())
         {
             NextTurn();
             return;
@@ -210,7 +205,7 @@ public class BattleSystem : MonoBehaviour
         ClearAllHighlights();
         currentFighter.SetActiveHighlight(true);
 
-        if (currentFighter.figureData.isEnemy)
+        if (G.figureManager.GetFigure(currentFighter.FigureId).isEnemy)
         {
             state = BattleState.EnemyTurn;
             battleUI.SetBattleState(state);
@@ -220,18 +215,15 @@ public class BattleSystem : MonoBehaviour
         {
             state = BattleState.PlayerTurn;
             battleUI.SetBattleState(state);
-            actionPanel.Set(currentFighter.figureData);
-            UIDebug.Log($"Ход: {currentFighter.figureData.name}");
+            actionPanel.Set(G.figureManager.GetFigure(currentFighter.FigureId));
         }
     }
 
     public void OnSkillSelected(Skill skill)
     {
-        Debug.Log("Skill selected in bs: " + skill.skillName);
         selectedSkill = skill;
         state = BattleState.WaitingForTarget;
         battleUI.SetBattleState(state);
-        UIDebug.Log($"Выберите цель для {skill.skillName}");
 
         // Подсвечиваем возможные цели
         HighlightValidTargets(skill);
@@ -254,12 +246,12 @@ public class BattleSystem : MonoBehaviour
         if (skill.type == Skill.SkillType.Attack)
         {
             // Атака - только враги
-            targets = enemyViews.Where(v => v.figureData.IsAlive()).ToList();
+            targets = enemyViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()).ToList();
         }
         else if (skill.type == Skill.SkillType.Heal)
         {
             // Лечение - только союзники
-            targets = playerViews.Where(v => v.figureData.IsAlive()).ToList();
+            targets = playerViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()).ToList();
         }
 
         return targets;
@@ -305,28 +297,25 @@ public class BattleSystem : MonoBehaviour
         {
             yield return actor.AttackAnimation(target.transform.position);
 
-            value = Mathf.Max(1, actor.figureData.damage / 2 + skill.power - target.figureData.defense / 2);
-            target.figureData.TakeDamage(value);
+            value = Mathf.Max(1, G.figureManager.GetFigure(actor.FigureId).damage / 2 + skill.power - G.figureManager.GetFigure(target.FigureId).defense / 2);
+            G.figureManager.GetFigure(target.FigureId).TakeDamage(value);
             target.PlayHitAnimation();
             target.ShowDamageText(value, false);
         }
         else if (skill.type == Skill.SkillType.Heal)
         {
             value = skill.power;
-            target.figureData.Heal(value);
+            G.figureManager.GetFigure(target.FigureId).Heal(value);
             target.ShowDamageText(value, true);
         }
 
-        target.UpdateHealthBar();
-        UIDebug.Log($"{actor.figureData.name} использует {skill.skillName} на {target.figureData.name} ({value})");
 
         yield return new WaitForSeconds(0.5f);
 
         // Проверяем смерть
-        if (!target.figureData.IsAlive())
+        if (!G.figureManager.GetFigure(target.FigureId).IsAlive())
         {
             target.PlayDeathAnimation();
-            UIDebug.Log($"{target.figureData.name} повержен!");
             yield return new WaitForSeconds(0.5f);
         }
 
@@ -341,7 +330,7 @@ public class BattleSystem : MonoBehaviour
     {
         yield return new WaitForSeconds(1f);
 
-        var alivePlayers = playerViews.Where(v => v.figureData.IsAlive()).ToList();
+        var alivePlayers = playerViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()).ToList();
         if (alivePlayers.Count == 0)
         {
             NextTurn();
@@ -354,8 +343,8 @@ public class BattleSystem : MonoBehaviour
         target.SetTargetHighlight(true);
         yield return new WaitForSeconds(0.5f);
 
-        var enemySkill = currentFighter.figureData.skills.FirstOrDefault()
-            ?? new Skill("Удар", Skill.SkillType.Attack, currentFighter.figureData.damage, 1);
+        var enemySkill = G.figureManager.GetFigure(currentFighter.FigureId).skills.FirstOrDefault()
+            ?? new Skill("Удар", Skill.SkillType.Attack, G.figureManager.GetFigure(currentFighter.FigureId).damage, 1);
 
         yield return ExecuteAction(currentFighter, target, enemySkill);
     }

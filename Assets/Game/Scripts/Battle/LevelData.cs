@@ -5,10 +5,10 @@ public class LevelData
 {
     public string levelName;
     public int difficulty;
-    public List<Figure> enemies = new();
+    public List<string> enemies = new();
     public BattleReward reward;
 
-    public LevelData(string levelName, int difficulty, List<Figure> enemies, BattleReward reward)
+    public LevelData(string levelName, int difficulty, List<string> enemies, BattleReward reward)
     {
         this.levelName = levelName;
         this.difficulty = difficulty;

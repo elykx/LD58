@@ -30,7 +30,7 @@ public class Figure
     public List<Skill> skills = new List<Skill>();
     private Dictionary<string, int> skillCooldowns = new Dictionary<string, int>();
     // Позиция в шкафу
-    public Vector2Int shelfPosition;
+    public Figure(){}
 
     public Figure(string id, string name, int hp, int dmg, int spd, int def, int lvl)
     {

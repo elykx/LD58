@@ -4,11 +4,9 @@ using UnityEngine;
 public class BattleFigureView : MonoBehaviour
 {
     public SpriteRenderer spriteRenderer;
-    public Figure figureData;
+    public string FigureId;
 
     [Header("UI элементы")]
-    public Transform healthBarParent;
-    public SpriteRenderer healthBarFill;
     public SpriteRenderer selectionHighlight; // Подсветка выбора
     public SpriteRenderer activeHighlight; // Подсветка активного бойца
     public SpriteRenderer targetHighlight; // Подсветка возможной цели
@@ -24,9 +22,12 @@ public class BattleFigureView : MonoBehaviour
         originalScale = transform.localScale;
     }
 
-    public void Initialize(Figure figure)
+    public void Initialize(string figureId)
     {
-        figureData = figure;
+        FigureId = figureId;
+        Figure figure = G.figureManager.GetFigure(figureId);
+
+
         originalPosition = transform.localPosition;
 
         if (spriteRenderer != null && figure.sprite != null)
@@ -40,7 +41,7 @@ public class BattleFigureView : MonoBehaviour
             transform.localScale = new Vector3(-originalScale.x, originalScale.y, originalScale.z);
         }
 
-        UpdateHealthBar();
+        // UpdateHealthBar();
         SetSelectionHighlight(false);
         SetActiveHighlight(false);
         SetTargetHighlight(false);
@@ -91,23 +92,6 @@ public class BattleFigureView : MonoBehaviour
         if (targetHighlight != null)
         {
             targetHighlight.enabled = active;
-        }
-    }
-
-    public void UpdateHealthBar()
-    {
-        if (healthBarFill != null && figureData != null)
-        {
-            float healthPercent = (float)figureData.currentHealth / figureData.maxHealth;
-            healthBarFill.transform.localScale = new Vector3(healthPercent, 1f, 1f);
-
-            // Меняем цвет в зависимости от здоровья
-            if (healthPercent > 0.5f)
-                healthBarFill.color = Color.green;
-            else if (healthPercent > 0.25f)
-                healthBarFill.color = Color.yellow;
-            else
-                healthBarFill.color = Color.red;
         }
     }
 

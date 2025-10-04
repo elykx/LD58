@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ShelfSlot : MonoBehaviour
 {
-    [HideInInspector] public ShelfFigure currentFigure;
+    [HideInInspector] public ViewShelfFigure currentFigure;
     public bool IsEmpty => currentFigure == null;
     private SpriteRenderer spriteRenderer;
 
@@ -24,7 +24,7 @@ public class ShelfSlot : MonoBehaviour
         spriteRenderer.enabled = false;
     }
 
-    public void PlaceFigure(ShelfFigure figure)
+    public void PlaceFigure(ViewShelfFigure figure)
     {
         if (!IsEmpty) return;
 
