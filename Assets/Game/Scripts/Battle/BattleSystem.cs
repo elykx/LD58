@@ -43,11 +43,6 @@ public class BattleSystem : MonoBehaviour
     {
         G.battleSystem = this;
     }
-    // void Start()
-    // {
-    //     SetupExampleBattle();
-    //     StartBattle();
-    // }
 
     public void StartBattle(LevelData level)
     {
@@ -71,6 +66,12 @@ public class BattleSystem : MonoBehaviour
         NextTurn();
 
         UIDebug.Log($"Битва началась! Уровень: {level.levelName}");
+    }
+
+    public void EndBattle()
+    {
+        battleActive = false;
+        ClearBattle();
     }
 
     // 0. Очистка битвы
@@ -176,6 +177,7 @@ public class BattleSystem : MonoBehaviour
             battleUI.SetBattleState(state);
             UIDebug.Log("Поражение!");
             actionPanel.Hide();
+            G.main.EndBattle();
             return;
         }
         if (!enemyViews.Any(v => v.figureData.IsAlive()))
@@ -184,6 +186,7 @@ public class BattleSystem : MonoBehaviour
             battleUI.SetBattleState(state);
             UIDebug.Log("Победа!");
             actionPanel.Hide();
+            G.main.EndBattle();
             return;
         }
 

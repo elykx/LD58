@@ -79,4 +79,23 @@ public class ShelfManager : MonoBehaviour
                 RemoveFigureFromSlot(i);
         }
     }
+
+    public void ShowSlotsSprites()
+    {
+        foreach (var slot in slots)
+        {
+            if (slot.currentFigure == null)
+            {
+                slot.ShowSprite();
+            }
+        }
+    }
+    
+    public void HideSlotsSprites()
+    {
+        foreach (var slot in slots)
+        {
+            slot.HideSprite();
+        }
+    }   
 }

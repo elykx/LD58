@@ -9,6 +9,8 @@ public class Figure
 {
     public string id;
     public string name;
+    public string description;
+    public int rarity;
     public Sprite sprite;
     public int cost;
     public int lvl;
@@ -27,8 +29,6 @@ public class Figure
     // Скиллы
     public List<Skill> skills = new List<Skill>();
     private Dictionary<string, int> skillCooldowns = new Dictionary<string, int>();
-
-
     // Позиция в шкафу
     public Vector2Int shelfPosition;
 
@@ -117,5 +117,5 @@ public class Skill
         canTargetAllies = type == SkillType.Heal || type == SkillType.Buff;
     }
 
-    
+
 }

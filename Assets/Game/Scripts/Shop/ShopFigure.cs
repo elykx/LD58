@@ -36,7 +36,7 @@ public class ShopFigure : MonoBehaviour
     {
         Debug.Log("BuyRandomFigure");
 
-            var figure = FigureFactory.GetRandomFigure(G.playerData.level);
+        var figure = FigureFactory.GetRandomFigure(G.playerData.level);
         Debug.Log("BuyRandomFigure" + figure);
         if (figure != null) BuyFigure(figure);
     }
@@ -59,4 +59,5 @@ public class ShopFigure : MonoBehaviour
             G.shelfManager.RemoveFigure(toRemove);
         }
     }
+    
 }

@@ -6,6 +6,23 @@ public class ShelfSlot : MonoBehaviour
 {
     [HideInInspector] public ShelfFigure currentFigure;
     public bool IsEmpty => currentFigure == null;
+    private SpriteRenderer spriteRenderer;
+
+    void Start()
+    {
+        spriteRenderer = GetComponent<SpriteRenderer>();
+        spriteRenderer.enabled = false;
+    }
+
+    public void ShowSprite()
+    {
+        spriteRenderer.enabled = true;
+    }
+
+     public void HideSprite()
+    {
+        spriteRenderer.enabled = false;
+    }
 
     public void PlaceFigure(ShelfFigure figure)
     {
