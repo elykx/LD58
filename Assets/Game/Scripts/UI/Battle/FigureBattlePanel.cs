@@ -26,12 +26,8 @@ public class FigureBattlePanel : MonoBehaviour
             {
                 var buttonObj = Instantiate(skillButtonPrefab, skillPanel.transform);
                 var button = buttonObj.GetComponent<Button>();
-                var buttonText = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
-
-                if (buttonText != null)
-                {
-                    buttonText.text = skill.skillName + "\n" + skill.power;
-                }
+                var icon = buttonObj.GetComponent<SkillIcon>();
+                icon.SetIcon(skill.sprite);
 
                 // Привязка клика к навыку
                 var skillCopy = skill; // Важно для замыкания

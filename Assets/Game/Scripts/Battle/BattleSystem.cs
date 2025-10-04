@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Events;
 
 public enum BattleState
 {
@@ -23,6 +24,10 @@ public class BattleSystem : MonoBehaviour
     public FigureBattlePanel actionPanel;
     public BattleUI battleUI;
 
+    [Header("События")]
+    public UnityEvent<BattleReward> OnBattleVictory;
+    public UnityEvent OnBattleDefeat;
+
     private List<BattleFigureView> playerViews = new();
     private List<BattleFigureView> enemyViews = new();
     private Queue<BattleFigureView> turnOrder = new();
@@ -30,24 +35,117 @@ public class BattleSystem : MonoBehaviour
     private Skill selectedSkill;
 
     public BattleState state;
+    private LevelData currentLevel;
+    private bool battleActive = false;
+
 
     void Awake()
     {
         G.battleSystem = this;
     }
-    void Start()
-    {
-        SetupExampleBattle();
-        StartBattle();
-    }
+    // void Start()
+    // {
+    //     SetupExampleBattle();
+    //     StartBattle();
+    // }
 
-    private void StartBattle()
+    public void StartBattle(LevelData level)
     {
+        if (battleActive)
+        {
+            UIDebug.Log("Битва уже идёт!");
+            return;
+        }
+
+        currentLevel = level;
+        battleActive = true;
+
+        // Очищаем предыдущие данные
+        ClearBattle();
+
+        PlayerFigures();
+        EnemyFigures(level);
+
+        // Начинаем битву
         CalculateTurnOrder();
         NextTurn();
+
+        UIDebug.Log($"Битва началась! Уровень: {level.levelName}");
     }
 
+    // 0. Очистка битвы
+    private void ClearBattle()
+    {
+        // Удаляем старые фигурки
+        foreach (var view in playerViews)
+        {
+            if (view != null)
+                Destroy(view.gameObject);
+        }
+        foreach (var view in enemyViews)
+        {
+            if (view != null)
+                Destroy(view.gameObject);
+        }
 
+        playerViews.Clear();
+        enemyViews.Clear();
+        turnOrder.Clear();
+        currentFighter = null;
+        selectedSkill = null;
+    }
+
+    // 1. Собрать мои фигурки
+    private void PlayerFigures()
+    {
+        List<Figure> playerFigures = new();
+        var fig1 = G.shelfManager.GetFigureFromSlot(0);
+        if (fig1 != null)
+            playerFigures.Add(fig1.data);
+        var fig2 = G.shelfManager.GetFigureFromSlot(1);
+        if (fig2 != null)
+            playerFigures.Add(fig2.data);
+        var fig3 = G.shelfManager.GetFigureFromSlot(2);
+        if (fig3 != null)
+            playerFigures.Add(fig3.data);
+        var fig4 = G.shelfManager.GetFigureFromSlot(3);
+        if (fig4 != null)
+            playerFigures.Add(fig4.data);
+
+        if (playerFigures.Count == 0)
+        {
+            UIDebug.Log("Нет доступных бойцов!");
+            battleActive = false;
+            return;
+        }
+
+        SetupTeam(playerFigures.ToArray(), false, playerPositions, playerViews);
+
+    }
+
+    // 2. Собрать врагов из уровня
+    private void EnemyFigures(LevelData level)
+    {
+        // Загружаем врагов из уровня
+        List<Figure> enemyFigures = level.enemies;
+
+        // Расставляем команды
+        SetupTeam(enemyFigures.ToArray(), true, enemyPositions, enemyViews);
+    }
+
+    private void SetupTeam(Figure[] figures, bool isEnemy, Transform[] positions, List<BattleFigureView> list)
+    {
+        list.Clear();
+        for (int i = 0; i < figures.Length && i < positions.Length; i++)
+        {
+            figures[i].isEnemy = isEnemy;
+            var view = Instantiate(battleFigurePrefab, positions[i]).GetComponent<BattleFigureView>();
+            view.Initialize(figures[i]);
+            list.Add(view);
+        }
+    }
+
+    // 3. Рассчитываем очередь
     private void CalculateTurnOrder()
     {
         turnOrder.Clear();
@@ -68,41 +166,7 @@ public class BattleSystem : MonoBehaviour
         battleUI.SetTurnOrder(turnOrder);
     }
 
-    void SetupExampleBattle()
-    {
-        var warrior = new Figure("warrior", "Воин", 100, 25, 5, 10);
-        warrior.skills.Add(new Skill("Удар", Skill.SkillType.Attack, 40, 1));
-        warrior.skills.Add(new Skill("Сильный удар", Skill.SkillType.Attack, 60, 2));
-
-        var healer = new Figure("healer", "Целитель", 60, 10, 6, 3);
-        healer.skills.Add(new Skill("Лечение", Skill.SkillType.Heal, 35, 2));
-        healer.skills.Add(new Skill("Удар", Skill.SkillType.Attack, 20, 1));
-
-        SetupTeam(new[] { warrior, healer }, false, playerPositions, playerViews);
-
-        var enemy1 = new Figure("skeleton", "Скелет", 50, 15, 4, 5);
-        enemy1.skills.Add(new Skill("Удар", Skill.SkillType.Attack, 30, 1));
-
-        var enemy2 = new Figure("skeleton", "Скелет-лучник", 40, 20, 3, 8);
-        enemy2.skills.Add(new Skill("Выстрел", Skill.SkillType.Attack, 35, 1));
-
-        SetupTeam(new[] { enemy1, enemy2 }, true, enemyPositions, enemyViews);
-
-        state = BattleState.PlayerTurn;
-    }
-
-    void SetupTeam(Figure[] figures, bool isEnemy, Transform[] positions, List<BattleFigureView> list)
-    {
-        list.Clear();
-        for (int i = 0; i < figures.Length && i < positions.Length; i++)
-        {
-            figures[i].isEnemy = isEnemy;
-            var view = Instantiate(battleFigurePrefab, positions[i]).GetComponent<BattleFigureView>();
-            view.Initialize(figures[i]);
-            list.Add(view);
-        }
-    }
-
+    // 4. Следующий ход
     void NextTurn()
     {
         // Проверяем условия победы/поражения
@@ -110,7 +174,7 @@ public class BattleSystem : MonoBehaviour
         {
             state = BattleState.Defeat;
             battleUI.SetBattleState(state);
-            Log("Поражение!");
+            UIDebug.Log("Поражение!");
             actionPanel.Hide();
             return;
         }
@@ -118,7 +182,7 @@ public class BattleSystem : MonoBehaviour
         {
             state = BattleState.Victory;
             battleUI.SetBattleState(state);
-            Log("Победа!");
+            UIDebug.Log("Победа!");
             actionPanel.Hide();
             return;
         }
@@ -151,16 +215,11 @@ public class BattleSystem : MonoBehaviour
         }
         else
         {
-            ShowActionPanel();
+            state = BattleState.PlayerTurn;
+            battleUI.SetBattleState(state);
+            actionPanel.Set(currentFighter.figureData);
+            UIDebug.Log($"Ход: {currentFighter.figureData.name}");
         }
-    }
-
-    void ShowActionPanel()
-    {
-        state = BattleState.PlayerTurn;
-        battleUI.SetBattleState(state);
-        actionPanel.Set(currentFighter.figureData);
-        Log($"Ход: {currentFighter.figureData.name}");
     }
 
     public void OnSkillSelected(Skill skill)
@@ -169,7 +228,7 @@ public class BattleSystem : MonoBehaviour
         selectedSkill = skill;
         state = BattleState.WaitingForTarget;
         battleUI.SetBattleState(state);
-        Log($"Выберите цель для {skill.skillName}");
+        UIDebug.Log($"Выберите цель для {skill.skillName}");
 
         // Подсвечиваем возможные цели
         HighlightValidTargets(skill);
@@ -211,7 +270,7 @@ public class BattleSystem : MonoBehaviour
         List<BattleFigureView> validTargets = GetValidTargets(selectedSkill);
         if (!validTargets.Contains(target))
         {
-            Log("Неверная цель!");
+            UIDebug.Log("Неверная цель!");
             return;
         }
 
@@ -256,7 +315,7 @@ public class BattleSystem : MonoBehaviour
         }
 
         target.UpdateHealthBar();
-        Log($"{actor.figureData.name} использует {skill.skillName} на {target.figureData.name} ({value})");
+        UIDebug.Log($"{actor.figureData.name} использует {skill.skillName} на {target.figureData.name} ({value})");
 
         yield return new WaitForSeconds(0.5f);
 
@@ -264,7 +323,7 @@ public class BattleSystem : MonoBehaviour
         if (!target.figureData.IsAlive())
         {
             target.PlayDeathAnimation();
-            Log($"{target.figureData.name} повержен!");
+            UIDebug.Log($"{target.figureData.name} повержен!");
             yield return new WaitForSeconds(0.5f);
         }
 
@@ -298,8 +357,4 @@ public class BattleSystem : MonoBehaviour
         yield return ExecuteAction(currentFighter, target, enemySkill);
     }
 
-    void Log(string text)
-    {
-        UIDebug.Log(text);
-    }
 }

@@ -84,6 +84,7 @@ public class Skill
     public string description;
     public int cooldown;
     public SkillType type;
+    public Sprite sprite;
 
     // Параметры скилла
     public int power; // Урон или хил

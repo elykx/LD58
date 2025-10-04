@@ -155,11 +155,24 @@ MonoBehaviour:
     id: 123
     name: 1231
     sprite: {fileID: 21300000, guid: eaa56a7417ef26a4e835850ad70b95b3, type: 3}
-    health: 123
+    maxHealth: 10
+    currentHealth: 10
     damage: 312
     speed: 312
     defense: 123
-    skills: []
+    battlePosition: 0
+    isEnemy: 0
+    skills:
+    - skillName: Attack
+      description: Attack
+      cooldown: 5
+      type: 0
+      sprite: {fileID: -394536619, guid: 15caa1b5701e10b4096f0f44febbf953, type: 3}
+      power: 12
+      minRange: 0
+      maxRange: 3
+      canTargetAllies: 0
+      canTargetEnemies: 1
     shelfPosition: {x: 0, y: 0}
   currentSlot: {fileID: 0}
 --- !u!114 &-4154338678508379747
