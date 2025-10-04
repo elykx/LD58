@@ -10,6 +10,8 @@ public class Figure
     public string id;
     public string name;
     public Sprite sprite;
+    public int cost;
+    public int lvl;
 
     // Статы
     public int maxHealth;
@@ -30,7 +32,7 @@ public class Figure
     // Позиция в шкафу
     public Vector2Int shelfPosition;
 
-    public Figure(string id, string name, int hp, int dmg, int spd, int def)
+    public Figure(string id, string name, int hp, int dmg, int spd, int def, int lvl)
     {
         this.id = id;
         this.name = name;
@@ -39,6 +41,7 @@ public class Figure
         damage = dmg;
         speed = spd;
         defense = def;
+        this.lvl = lvl;
     }
 
     public bool IsAlive() => currentHealth > 0;

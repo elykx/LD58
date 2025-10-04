@@ -61,13 +61,22 @@ public class ShelfManager : MonoBehaviour
         return slots[slotIndex].currentFigure;
     }
 
-    public int GetSlotIndexOfFigure(ShelfFigure figure)
+    public int GetSlotIndexOfFigure(Figure figure)
     {
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i].currentFigure == figure)
+            if (slots[i].currentFigure != null && slots[i].currentFigure.data.id == figure.id)
                 return i;
         }
-        return -1; 
+        return -1;
+    }
+
+    public void RemoveFigure(Figure figure)
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i].currentFigure != null && slots[i].currentFigure.data.id == figure.id)
+                RemoveFigureFromSlot(i);
+        }
     }
 }
