@@ -11,6 +11,11 @@ public class CameraMove : MonoBehaviour
     public float baseDuration = 2f;
     public float bedDuration = 2f;
 
+    void Awake()
+    {
+        G.cameraMove = this;
+    }
+
     public void MoveCameraToShop()
     {
         LMotion.Create(transform.position, shopTransform.position, shopDuration)

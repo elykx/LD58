@@ -7,10 +7,12 @@ using UnityEngine;
 public class Main : MonoBehaviour
 {
     private bool nightReady = false;
+    public GameObject shop;
 
     private void Awake()
     {
         G.main = this;
+        shop.SetActive(false);
     }
 
     private void Start()
@@ -18,9 +20,7 @@ public class Main : MonoBehaviour
         // Init
         GameAnalytics.Initialize();
         CMS.Init();
-        UIDebug.Log("Игра запущена.", Color.aquamarine);
-
-
+        
         // Start Day Loop
         G.timer.OnNightStart += OnNightStart;
         G.timer.StartDay();
@@ -53,15 +53,13 @@ public class Main : MonoBehaviour
         nightReady = true;
     }
 
-    public void OnBattleButton()
+    public void StartBattle()
     {
         if (nightReady)
         {
+            G.cameraMove.MoveCameraToBed();
             G.battleSystem.StartBattle(LevelManager.GetLevelById("level_1"));
-        }
-        else
-        {
-            Debug.Log("Бой нельзя запустить — день ещё идёт!");
+            G.playerData.current_pos = "battle";
         }
     }
 
@@ -70,7 +68,27 @@ public class Main : MonoBehaviour
         nightReady = false;
         G.timer.StartDay();
         G.battleSystem.EndBattle();
+        G.cameraMove.MoveCameraToBase();
+        G.playerData.current_pos = "main";
+        G.playerData.shopAlreadyOpened = false;
         Debug.Log("Бой завершён, день пошёл заново!");
+    }
+
+    public void GoShop()
+    {
+        if (G.playerData.current_pos != "main" || G.playerData.shopAlreadyOpened) return;
+        G.cameraMove.MoveCameraToShop();
+        shop.SetActive(true);
+        G.shopFigures.GenerateShopFigures(G.playerData.level);
+        G.playerData.current_pos = "shop";
+        G.playerData.shopAlreadyOpened = true;
+    }
+
+    public void CloseShop()
+    {
+        shop.SetActive(false);
+        G.cameraMove.MoveCameraToBase();
+        G.playerData.current_pos = "main";
     }
 
     private void OnDestroy()

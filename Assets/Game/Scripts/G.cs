@@ -9,4 +9,5 @@ public static class G
     public static BattleSystem battleSystem;
     public static ShopFigure shopFigures;
     public static FigureManager figureManager;
+    public static CameraMove cameraMove;
 }

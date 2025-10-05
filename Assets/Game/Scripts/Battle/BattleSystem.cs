@@ -100,7 +100,6 @@ public class BattleSystem : MonoBehaviour
     {
         if (battleActive)
         {
-            UIDebug.Log("Битва уже идёт!");
             return;
         }
 
@@ -114,8 +113,6 @@ public class BattleSystem : MonoBehaviour
 
         state = BattleState.InProgress;
         battleUI?.SetBattleState(state);
-
-        UIDebug.Log($"Автобатл начался! Уровень: {level.levelId}");
     }
 
     public void EndBattle()
@@ -196,7 +193,6 @@ public class BattleSystem : MonoBehaviour
 
         if (playerFigures.Count == 0)
         {
-            UIDebug.Log("Нет доступных бойцов!");
             battleActive = false;
         }
 
@@ -336,8 +332,6 @@ public class BattleSystem : MonoBehaviour
         if (skill.cooldown > 0)
             actor.figure.UseSkill(skill);
 
-        UIDebug.Log($"{actor.figure.name} использует {skill.skillName} на {target.figure.name}");
-
         switch (skill.type)
         {
             case Skill.SkillType.Attack:
@@ -391,8 +385,6 @@ public class BattleSystem : MonoBehaviour
         target.figure.damage += skill.power;
         //TODO target.view.ShowBuffEffect(); 
 
-        UIDebug.Log($"{target.figure.name} получает бафф! Урон +{skill.power}");
-
         yield return new WaitForSeconds(0.3f);
     }
 
@@ -400,8 +392,6 @@ public class BattleSystem : MonoBehaviour
     {
         target.figure.defense = Mathf.Max(0, target.figure.defense - skill.power);
         //TODO target.view.ShowDebuffEffect();
-
-        UIDebug.Log($"{target.figure.name} получает дебафф! Защита -{skill.power}");
 
         yield return new WaitForSeconds(0.3f);
     }
@@ -415,7 +405,6 @@ public class BattleSystem : MonoBehaviour
         {
             state = BattleState.Defeat;
             battleUI?.SetBattleState(state);
-            UIDebug.Log("Поражение!");
             OnBattleDefeat?.Invoke();
             StartCoroutine(DelayedEndBattle());
         }
@@ -423,7 +412,6 @@ public class BattleSystem : MonoBehaviour
         {
             state = BattleState.Victory;
             battleUI?.SetBattleState(state);
-            UIDebug.Log("Победа!");
 
             var reward = new BattleReward
             {
