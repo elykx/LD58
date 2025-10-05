@@ -6,11 +6,35 @@ using UnityEngine.Events;
 
 public enum BattleState
 {
-    PlayerTurn,
-    WaitingForTarget,
-    EnemyTurn,
+    Preparing,
+    InProgress,
     Victory,
-    Defeat
+    Defeat,
+    Paused
+}
+
+public class BattleFighterData
+{
+    public BattleFigureView view;
+    public Figure figure;
+    public float actionBar = 0f;
+    public bool isActing = false;
+}
+
+[System.Serializable]
+public class BattleReward
+{
+    public int gold;
+    public int experience;
+    public List<string> items;
+
+    public BattleReward(int gold, int exp, List<string> items)
+    {
+        this.gold = gold;
+        this.experience = exp;
+        this.items = items;
+    }
+    public BattleReward() { }
 }
 
 public class BattleSystem : MonoBehaviour
@@ -21,27 +45,55 @@ public class BattleSystem : MonoBehaviour
     public GameObject battleFigurePrefab;
 
     [Header("UI")]
-    public FigureBattlePanel actionPanel;
     public BattleUI battleUI;
 
     [Header("События")]
     public UnityEvent<BattleReward> OnBattleVictory;
     public UnityEvent OnBattleDefeat;
 
-    public List<BattleFigureView> playerViews = new();
-    public List<BattleFigureView> enemyViews = new();
-    public Queue<BattleFigureView> turnOrder = new();
-    private BattleFigureView currentFighter;
-    private Skill selectedSkill;
+    [Header("Настройки боя")]
+    public float actionDelay = 0.5f;
+    public float turnCalculationInterval = 0.1f;
 
-    public BattleState state;
-    private LevelData currentLevel;
+    private List<BattleFighterData> allFighters = new();
+    public LevelData currentLevel;
     private bool battleActive = false;
+    private float battleTimer = 0f;
+    public BattleState state;
+
+    // public List<BattleFigureView> playerViews = new();
+    // public List<BattleFigureView> enemyViews = new();
+    // public Queue<BattleFigureView> turnOrder = new();
+    // private BattleFigureView currentFighter;
+    // private Skill selectedSkill;
+
+    // public BattleState state;
+    // private LevelData currentLevel;
+    // private bool battleActive = false;
 
 
     void Awake()
     {
         G.battleSystem = this;
+    }
+
+    void Update()
+    {
+        if (!battleActive || state != BattleState.InProgress)
+            return;
+
+        battleTimer += Time.deltaTime;
+
+        // Обновляем шкалы действий только для живых бойцов
+        foreach (var fighter in allFighters.Where(f => f.figure.IsAlive()))
+        {
+            fighter.actionBar += fighter.figure.speed * Time.deltaTime;
+
+            if (fighter.actionBar >= 100f && !fighter.isActing)
+            {
+                StartCoroutine(PerformAction(fighter));
+            }
+        }
     }
 
     public void StartBattle(LevelData level)
@@ -54,18 +106,16 @@ public class BattleSystem : MonoBehaviour
 
         currentLevel = level;
         battleActive = true;
+        battleTimer = 0f;
 
-        // Очищаем предыдущие данные
         ClearBattle();
+        SetupTeam(true); // Игроки
+        SetupTeam(false); // Враги
 
-        PlayerFigures();
-        EnemyFigures(level);
+        state = BattleState.InProgress;
+        battleUI?.SetBattleState(state);
 
-        // Начинаем битву
-        CalculateTurnOrder();
-        NextTurn();
-
-        UIDebug.Log($"Битва началась! Уровень: {level.levelName}");
+        UIDebug.Log($"Автобатл начался! Уровень: {level.levelId}");
     }
 
     public void EndBattle()
@@ -74,279 +124,321 @@ public class BattleSystem : MonoBehaviour
         ClearBattle();
     }
 
+    public void PauseBattle()
+    {
+        if (state == BattleState.InProgress)
+        {
+            state = BattleState.Paused;
+            battleUI?.SetBattleState(state);
+        }
+    }
+
+    public void ResumeBattle()
+    {
+        if (state == BattleState.Paused)
+        {
+            state = BattleState.InProgress;
+            battleUI?.SetBattleState(state);
+        }
+    }
+
     // 0. Очистка битвы
     private void ClearBattle()
     {
-        // Удаляем старые фигурки
-        foreach (var view in playerViews)
+        foreach (var fighter in allFighters)
         {
-            if (view != null)
-                Destroy(view.gameObject);
-        }
-        foreach (var view in enemyViews)
-        {
-            if (view != null)
-                Destroy(view.gameObject);
+            Destroy(fighter.view.gameObject);
         }
 
-        playerViews.Clear();
-        enemyViews.Clear();
-        turnOrder.Clear();
-        currentFighter = null;
-        selectedSkill = null;
+        allFighters.Clear();
     }
 
-    // 1. Собрать мои фигурки
-    private void PlayerFigures()
+    // 1. Собрать фигурки
+    private void SetupTeam(bool isPlayer)
+    {
+        Transform[] positions = isPlayer ? playerPositions : enemyPositions;
+        string[] figures = isPlayer
+            ? GetPlayerFigures()
+            : currentLevel.enemyIds.ToArray();
+
+        Debug.Log($"Setup team: {string.Join(", ", figures)}");
+        for (int i = 0; i < figures.Length && i < positions.Length; i++)
+        {
+            var figure = G.figureManager.GetFigure(figures[i]);
+            Debug.Log($"Setup figure: {figure.name} + {figure.sprite}");
+            figure.isEnemy = !isPlayer;
+            figure.battlePosition = i;
+
+            var view = Instantiate(battleFigurePrefab, positions[i]).GetComponent<BattleFigureView>();
+            view.Initialize(figures[i]);
+
+            var fighterData = new BattleFighterData
+            {
+                view = view,
+                figure = figure,
+                actionBar = Random.Range(0f, 30f) // Случайный старт
+            };
+
+            allFighters.Add(fighterData);
+        }
+    }
+
+    private string[] GetPlayerFigures()
     {
         List<string> playerFigures = new();
-        var fig1 = G.shelfManager.GetFigureFromSlot(0);
-        if (fig1 != null)
-            playerFigures.Add(fig1.FigureId);
-        var fig2 = G.shelfManager.GetFigureFromSlot(1);
-        if (fig2 != null)
-            playerFigures.Add(fig2.FigureId);
-        var fig3 = G.shelfManager.GetFigureFromSlot(2);
-        if (fig3 != null)
-            playerFigures.Add(fig3.FigureId);
-        var fig4 = G.shelfManager.GetFigureFromSlot(3);
-        if (fig4 != null)
-            playerFigures.Add(fig4.FigureId);
+
+        for (int i = 0; i < 4; i++)
+        {
+            var fig = G.shelfManager.GetFigureFromSlot(i);
+            if (fig != null)
+                playerFigures.Add(fig.FigureId);
+        }
 
         if (playerFigures.Count == 0)
         {
             UIDebug.Log("Нет доступных бойцов!");
             battleActive = false;
-            return;
         }
 
-        SetupTeam(playerFigures.ToArray(), false, playerPositions, playerViews);
-
+        return playerFigures.ToArray();
     }
 
-    // 2. Собрать врагов из уровня
-    private void EnemyFigures(LevelData level)
+    private IEnumerator PerformAction(BattleFighterData fighter)
     {
-        SetupTeam(level.enemies.ToArray(), true, enemyPositions, enemyViews);
-    }
+        fighter.isActing = true;
+        fighter.actionBar = 0f;
 
-    private void SetupTeam(string[] figures, bool isEnemy, Transform[] positions, List<BattleFigureView> list)
-    {
-        list.Clear();
-        for (int i = 0; i < figures.Length && i < positions.Length; i++)
+        // Выбор скилла и цели
+        var skill = ChooseSkill(fighter.figure);
+        var target = ChooseTarget(fighter, skill);
+
+        if (target == null)
         {
-            G.figureManager.GetFigure(figures[i]).isEnemy = isEnemy;
-            var view = Instantiate(battleFigurePrefab, positions[i]).GetComponent<BattleFigureView>();
-            view.Initialize(figures[i]);
-            list.Add(view);
-        }
-    }
-
-    // 3. Рассчитываем очередь
-    private void CalculateTurnOrder()
-    {
-        turnOrder.Clear();
-
-        var allViews = new List<BattleFigureView>();
-        allViews.AddRange(playerViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()));
-        allViews.AddRange(enemyViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()));
-
-        var sortedViews = allViews
-            .OrderByDescending(v => G.figureManager.GetFigure(v.FigureId).speed + UnityEngine.Random.Range(-2, 3))
-            .ToList();
-
-        foreach (var view in sortedViews)
-        {
-            turnOrder.Enqueue(view);
-        }
-
-        battleUI.SetTurnOrder(turnOrder);
-    }
-
-    // 4. Следующий ход
-    void NextTurn()
-    {
-        // Проверяем условия победы/поражения
-        if (!playerViews.Any(v => G.figureManager.GetFigure(v.FigureId).IsAlive()))
-        {
-            state = BattleState.Defeat;
-            battleUI.SetBattleState(state);
-            UIDebug.Log("Поражение!");
-            actionPanel.Hide();
-            G.main.EndBattle();
-            return;
-        }
-        if (!enemyViews.Any(v => G.figureManager.GetFigure(v.FigureId).IsAlive()))
-        {
-            state = BattleState.Victory;
-            battleUI.SetBattleState(state);
-            UIDebug.Log("Победа!");
-            actionPanel.Hide();
-            G.main.EndBattle();
-            return;
-        }
-
-        // Если очередь пуста, пересчитываем порядок ходов
-        if (turnOrder.Count == 0)
-        {
-            CalculateTurnOrder();
-        }
-
-        // Берём следующего бойца из очереди
-        currentFighter = turnOrder.Dequeue();
-        // Если боец мёртв, переходим к следующему
-        if (!G.figureManager.GetFigure(currentFighter.FigureId).IsAlive())
-        {
-            NextTurn();
-            return;
-        }
-
-        // Подсвечиваем активного бойца
-        ClearAllHighlights();
-        currentFighter.SetActiveHighlight(true);
-
-        if (G.figureManager.GetFigure(currentFighter.FigureId).isEnemy)
-        {
-            state = BattleState.EnemyTurn;
-            battleUI.SetBattleState(state);
-            StartCoroutine(EnemyTurn());
-        }
-        else
-        {
-            state = BattleState.PlayerTurn;
-            battleUI.SetBattleState(state);
-            actionPanel.Set(G.figureManager.GetFigure(currentFighter.FigureId));
-        }
-    }
-
-    public void OnSkillSelected(Skill skill)
-    {
-        selectedSkill = skill;
-        state = BattleState.WaitingForTarget;
-        battleUI.SetBattleState(state);
-
-        // Подсвечиваем возможные цели
-        HighlightValidTargets(skill);
-    }
-
-    private void HighlightValidTargets(Skill skill)
-    {
-        List<BattleFigureView> validTargets = GetValidTargets(skill);
-
-        foreach (var view in validTargets)
-        {
-            view.SetTargetHighlight(true);
-        }
-    }
-
-    private List<BattleFigureView> GetValidTargets(Skill skill)
-    {
-        List<BattleFigureView> targets = new();
-
-        if (skill.type == Skill.SkillType.Attack)
-        {
-            // Атака - только враги
-            targets = enemyViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()).ToList();
-        }
-        else if (skill.type == Skill.SkillType.Heal)
-        {
-            // Лечение - только союзники
-            targets = playerViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()).ToList();
-        }
-
-        return targets;
-    }
-
-    public void OnTargetSelected(BattleFigureView target)
-    {
-        if (state != BattleState.WaitingForTarget) return;
-
-        // Проверяем, является ли цель валидной
-        List<BattleFigureView> validTargets = GetValidTargets(selectedSkill);
-        if (!validTargets.Contains(target))
-        {
-            UIDebug.Log("Неверная цель!");
-            return;
-        }
-
-        ClearAllHighlights();
-        actionPanel.Hide();
-        StartCoroutine(ExecuteAction(currentFighter, target, selectedSkill));
-    }
-
-    private void ClearAllHighlights()
-    {
-        foreach (var view in playerViews)
-        {
-            view.SetActiveHighlight(false);
-            view.SetTargetHighlight(false);
-        }
-        foreach (var view in enemyViews)
-        {
-            view.SetActiveHighlight(false);
-            view.SetTargetHighlight(false);
-        }
-    }
-
-    IEnumerator ExecuteAction(BattleFigureView actor, BattleFigureView target, Skill skill)
-    {
-        int value = 0;
-
-        // Анимация атаки
-        if (skill.type == Skill.SkillType.Attack)
-        {
-            yield return actor.AttackAnimation(target.transform.position);
-
-            value = Mathf.Max(1, G.figureManager.GetFigure(actor.FigureId).damage / 2 + skill.power - G.figureManager.GetFigure(target.FigureId).defense / 2);
-            G.figureManager.GetFigure(target.FigureId).TakeDamage(value);
-            target.PlayHitAnimation();
-            target.ShowDamageText(value, false);
-        }
-        else if (skill.type == Skill.SkillType.Heal)
-        {
-            value = skill.power;
-            G.figureManager.GetFigure(target.FigureId).Heal(value);
-            target.ShowDamageText(value, true);
-        }
-
-
-        yield return new WaitForSeconds(0.5f);
-
-        // Проверяем смерть
-        if (!G.figureManager.GetFigure(target.FigureId).IsAlive())
-        {
-            target.PlayDeathAnimation();
-            yield return new WaitForSeconds(0.5f);
-        }
-
-        // Сбрасываем выбор
-        selectedSkill = null;
-
-        // Следующий ход
-        NextTurn();
-    }
-
-    IEnumerator EnemyTurn()
-    {
-        yield return new WaitForSeconds(1f);
-
-        var alivePlayers = playerViews.Where(v => G.figureManager.GetFigure(v.FigureId).IsAlive()).ToList();
-        if (alivePlayers.Count == 0)
-        {
-            NextTurn();
+            fighter.isActing = false;
             yield break;
         }
 
-        var target = alivePlayers[UnityEngine.Random.Range(0, alivePlayers.Count)];
+        // Подсветка актора и цели
+        fighter.view.SetActiveHighlight(true);
+        target.view.SetTargetHighlight(true);
 
-        // Подсвечиваем цель
-        target.SetTargetHighlight(true);
-        yield return new WaitForSeconds(0.5f);
+        yield return new WaitForSeconds(actionDelay);
 
-        var enemySkill = G.figureManager.GetFigure(currentFighter.FigureId).skills.FirstOrDefault()
-            ?? new Skill("Удар", Skill.SkillType.Attack, G.figureManager.GetFigure(currentFighter.FigureId).damage, 1);
+        // Выполнение действия
+        yield return ExecuteSkill(fighter, target, skill);
 
-        yield return ExecuteAction(currentFighter, target, enemySkill);
+        // Убираем подсветку
+        fighter.view.SetActiveHighlight(false);
+        target.view.SetTargetHighlight(false);
+
+        // Уменьшаем кулдауны
+        fighter.figure.ReduceCooldowns();
+
+        fighter.isActing = false;
+
+        // Проверяем условия победы/поражения
+        CheckBattleEnd();
+    }
+
+    private Skill ChooseSkill(Figure figure)
+    {
+        var availableSkills = figure.skills
+            .Where(s => figure.CanUseSkill(s))
+            .ToList();
+
+        if (availableSkills.Count == 0)
+            return null;
+
+        // Приоритеты действий
+        var weightedSkills = availableSkills.Select(skill =>
+        {
+            int weight = CalculateSkillWeight(figure, skill);
+            return (skill, weight);
+        }).ToList();
+
+        return weightedSkills.OrderByDescending(ws => ws.weight).First().skill;
+    }
+
+    private int CalculateSkillWeight(Figure figure, Skill skill)
+    {
+        int weight = 0;
+
+        switch (skill.type)
+        {
+            case Skill.SkillType.Attack:
+                weight += 10; // Приоритет атаки
+                break;
+
+            case Skill.SkillType.Heal when figure.currentHealth < figure.maxHealth * 0.5f:
+                weight += 15; // Лечение при низком здоровье
+                break;
+
+            case Skill.SkillType.Buff when battleTimer < 5f:
+                weight += 8; // Баффы в начале боя
+                break;
+        }
+
+        return weight;
+    }
+
+    private BattleFighterData ChooseTarget(BattleFighterData actor, Skill skill)
+    {
+        var validTargets = GetValidTargets(actor, skill);
+
+        if (validTargets.Count == 0)
+            return null;
+
+        // Оцениваем эффективность для каждой цели
+        var scoredTargets = validTargets.Select(target =>
+        {
+            float score = CalculateTargetScore(actor, target, skill);
+            return (target, score);
+        }).ToList();
+
+        return scoredTargets.OrderByDescending(t => t.score).First().target;
+    }
+
+    private List<BattleFighterData> GetValidTargets(BattleFighterData actor, Skill skill)
+    {
+        bool isPlayerTeam = !actor.figure.isEnemy;
+        var targetPool = isPlayerTeam
+            ? allFighters.Where(f => f.figure.isEnemy)
+            : allFighters.Where(f => !f.figure.isEnemy);
+
+        return targetPool
+            .Where(f => f.figure.IsAlive() &&
+                        f.figure.battlePosition >= skill.minRange &&
+                        f.figure.battlePosition <= skill.maxRange)
+            .ToList();
+    }
+
+    private float CalculateTargetScore(BattleFighterData actor, BattleFighterData target, Skill skill)
+    {
+        switch (skill.type)
+        {
+            case Skill.SkillType.Attack:
+                return (actor.figure.damage + skill.power) / (target.figure.defense + 1) *
+                       (target.figure.currentHealth / (float)target.figure.maxHealth);
+
+            case Skill.SkillType.Heal:
+                return (target.figure.maxHealth - target.figure.currentHealth) / (float)target.figure.maxHealth;
+
+            case Skill.SkillType.Buff:
+                return target.figure.damage / (float)target.figure.maxHealth;
+
+            default:
+                return 1f;
+        }
+    }
+
+    private IEnumerator ExecuteSkill(BattleFighterData actor, BattleFighterData target, Skill skill)
+    {
+        if (skill.cooldown > 0)
+            actor.figure.UseSkill(skill);
+
+        UIDebug.Log($"{actor.figure.name} использует {skill.skillName} на {target.figure.name}");
+
+        switch (skill.type)
+        {
+            case Skill.SkillType.Attack:
+                yield return ExecuteAttack(actor, target, skill);
+                break;
+
+            case Skill.SkillType.Heal:
+                yield return ExecuteHeal(actor, target, skill);
+                break;
+
+            case Skill.SkillType.Buff:
+                yield return ExecuteBuff(actor, target, skill);
+                break;
+
+            case Skill.SkillType.Debuff:
+                yield return ExecuteDebuff(actor, target, skill);
+                break;
+        }
+
+        yield return new WaitForSeconds(0.3f);
+    }
+
+    private IEnumerator ExecuteAttack(BattleFighterData actor, BattleFighterData target, Skill skill)
+    {
+        yield return actor.view.AttackAnimation(target.view.transform.position);
+
+        int damage = Mathf.Max(1, actor.figure.damage / 2 + skill.power - target.figure.defense / 2);
+        target.figure.TakeDamage(damage);
+
+        target.view.PlayHitAnimation();
+        target.view.ShowDamageText(damage, false);
+
+        if (!target.figure.IsAlive())
+        {
+            target.view.PlayDeathAnimation();
+            yield return new WaitForSeconds(0.5f);
+        }
+    }
+
+    private IEnumerator ExecuteHeal(BattleFighterData actor, BattleFighterData target, Skill skill)
+    {
+        int healAmount = skill.power;
+        target.figure.Heal(healAmount);
+        target.view.ShowDamageText(healAmount, true);
+
+        yield return new WaitForSeconds(0.3f);
+    }
+
+    private IEnumerator ExecuteBuff(BattleFighterData actor, BattleFighterData target, Skill skill)
+    {
+        target.figure.damage += skill.power;
+        //TODO target.view.ShowBuffEffect(); 
+
+        UIDebug.Log($"{target.figure.name} получает бафф! Урон +{skill.power}");
+
+        yield return new WaitForSeconds(0.3f);
+    }
+
+    private IEnumerator ExecuteDebuff(BattleFighterData actor, BattleFighterData target, Skill skill)
+    {
+        target.figure.defense = Mathf.Max(0, target.figure.defense - skill.power);
+        //TODO target.view.ShowDebuffEffect();
+
+        UIDebug.Log($"{target.figure.name} получает дебафф! Защита -{skill.power}");
+
+        yield return new WaitForSeconds(0.3f);
+    }
+
+    private void CheckBattleEnd()
+    {
+        bool playersAlive = allFighters.Any(f => !f.figure.isEnemy && f.figure.IsAlive());
+        bool enemiesAlive = allFighters.Any(f => f.figure.isEnemy && f.figure.IsAlive());
+
+        if (!playersAlive)
+        {
+            state = BattleState.Defeat;
+            battleUI?.SetBattleState(state);
+            UIDebug.Log("Поражение!");
+            OnBattleDefeat?.Invoke();
+            StartCoroutine(DelayedEndBattle());
+        }
+        else if (!enemiesAlive)
+        {
+            state = BattleState.Victory;
+            battleUI?.SetBattleState(state);
+            UIDebug.Log("Победа!");
+
+            var reward = new BattleReward
+            {
+                gold = currentLevel.reward.gold,
+                experience = currentLevel.reward.experience
+            };
+            OnBattleVictory?.Invoke(reward);
+            StartCoroutine(DelayedEndBattle());
+        }
+    }
+
+    private IEnumerator DelayedEndBattle()
+    {
+        yield return new WaitForSeconds(2f);
+        G.main.EndBattle();
     }
 
 }

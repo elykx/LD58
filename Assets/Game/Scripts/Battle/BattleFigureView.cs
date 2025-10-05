@@ -49,7 +49,7 @@ public class BattleFigureView : MonoBehaviour
 
     void OnMouseEnter()
     {
-        if (G.battleSystem != null && G.battleSystem.state == BattleState.WaitingForTarget)
+        if (G.battleSystem != null)
         {
             SetSelectionHighlight(true);
         }
@@ -67,7 +67,7 @@ public class BattleFigureView : MonoBehaviour
     {
         if (G.battleSystem != null)
         {
-            G.battleSystem.OnTargetSelected(this);
+            // G.battleSystem.OnTargetSelected(this);
         }
     }
 

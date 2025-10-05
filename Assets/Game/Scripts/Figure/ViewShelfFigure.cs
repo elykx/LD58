@@ -1,3 +1,4 @@
+using LitMotion;
 using UnityEngine;
 
 [RequireComponent(typeof(Collider2D))]
@@ -6,19 +7,36 @@ public class ViewShelfFigure : MonoBehaviour
     public string FigureId;
     [HideInInspector] public ShelfSlot currentSlot;
     private Vector3 offset;
+    public SpriteRenderer figureSprite;
+
 
     private TooltipShower tooltip;
     private bool isDragging = false;
 
+    private MotionHandle idleMotionHandle;
+    private MotionHandle dragMotionHandle;
+    private Vector3 originalScale;
+    private float nextIdleTime;
+
     private void Awake()
     {
         gameObject.layer = LayerMask.NameToLayer("Dragging");
+        originalScale = transform.localScale;
     }
 
     void Start()
     {
+        figureSprite.sprite = G.figureManager.GetFigure(FigureId).sprite;
         tooltip = GetComponent<TooltipShower>();
         UpdateTooltip();
+
+        ScheduleNextIdleAnimation();
+    }
+
+    private void OnDestroy()
+    {
+        if (idleMotionHandle.IsActive()) idleMotionHandle.Cancel();
+        if (dragMotionHandle.IsActive()) dragMotionHandle.Cancel();
     }
 
     private void UpdateTooltip()
@@ -42,6 +60,13 @@ public class ViewShelfFigure : MonoBehaviour
 
     private void Update()
     {
+
+        if (!isDragging && Time.time >= nextIdleTime)
+        {
+            PlayRandomIdleAnimation();
+            ScheduleNextIdleAnimation();
+        }
+
         if (Input.GetMouseButtonDown(0) && !isDragging)
         {
             if (IsMouseOverThis())
@@ -66,6 +91,68 @@ public class ViewShelfFigure : MonoBehaviour
         }
     }
 
+    private void ScheduleNextIdleAnimation()
+    {
+        nextIdleTime = Time.time + Random.Range(1f, 12f);
+    }
+
+    private void PlayRandomIdleAnimation()
+    {
+        if (idleMotionHandle.IsActive()) idleMotionHandle.Cancel();
+
+        int animType = Random.Range(0, 4);
+
+        switch (animType)
+        {
+            case 0: // Подпрыгивание
+                Vector3 startPos = transform.localPosition; 
+                idleMotionHandle = LMotion.Create(0f, 0.2f, 0.3f)
+                    .WithEase(Ease.OutQuad)
+                    .WithLoops(2, LoopType.Yoyo)
+                    .Bind(offset =>
+                    {
+                        Vector3 pos = startPos;
+                        pos.y += offset; 
+                        transform.localPosition = pos;
+                    })
+                    .AddTo(gameObject);
+                break;
+
+            case 1: // Покачивание
+                idleMotionHandle = LMotion.Create(-5f, 5f, 0.4f)
+                    .WithEase(Ease.InOutSine)
+                    .WithLoops(2, LoopType.Yoyo)
+                    .Bind(angle =>
+                    {
+                        transform.localRotation = Quaternion.Euler(0, 0, angle);
+                    })
+                    .AddTo(gameObject);
+                break;
+
+            case 2: // Увеличение (breathe)
+                idleMotionHandle = LMotion.Create(1f, 1.1f, 0.5f)
+                    .WithEase(Ease.InOutSine)
+                    .WithLoops(2, LoopType.Yoyo)
+                    .Bind(scale =>
+                    {
+                        transform.localScale = originalScale * scale;
+                    })
+                    .AddTo(gameObject);
+                break;
+
+            case 3: // Быстрое встряхивание
+                idleMotionHandle = LMotion.Create(-10f, 10f, 0.1f)
+                    .WithEase(Ease.Linear)
+                    .WithLoops(4, LoopType.Yoyo)
+                    .Bind(angle =>
+                    {
+                        transform.localRotation = Quaternion.Euler(0, 0, angle);
+                    })
+                    .AddTo(gameObject);
+                break;
+        }
+    }
+
     private bool IsMouseOverThis()
     {
         Vector2 mousePos = GetMouseWorldPos();
@@ -81,6 +168,19 @@ public class ViewShelfFigure : MonoBehaviour
         isDragging = true;
         offset = transform.position - GetMouseWorldPos();
 
+        if (idleMotionHandle.IsActive()) idleMotionHandle.Cancel();
+
+        transform.localRotation = Quaternion.identity;
+        transform.localScale = originalScale;
+
+        dragMotionHandle = LMotion.Create(-8f, 8f, 0.5f)
+            .WithEase(Ease.InOutSine)
+            .WithLoops(-1, LoopType.Yoyo)
+            .Bind(angle =>
+            {
+                transform.localRotation = Quaternion.Euler(0, 0, angle);
+            })
+            .AddTo(gameObject);
         if (currentSlot != null)
             currentSlot.Clear();
 
@@ -94,6 +194,12 @@ public class ViewShelfFigure : MonoBehaviour
     private void EndDrag()
     {
         isDragging = false;
+
+        // Останавливаем покачивание при драге
+        if (dragMotionHandle.IsActive()) dragMotionHandle.Cancel();
+
+        // Плавно возвращаем rotation к нулю
+        transform.localRotation = Quaternion.identity;
 
         ShelfSlot nearest = FindNearestSlot();
         if (nearest != null && nearest.IsEmpty)
@@ -113,6 +219,8 @@ public class ViewShelfFigure : MonoBehaviour
         {
             currentSlot.PlaceFigure(this);
         }
+
+        ScheduleNextIdleAnimation();
     }
 
     private Vector3 GetMouseWorldPos()

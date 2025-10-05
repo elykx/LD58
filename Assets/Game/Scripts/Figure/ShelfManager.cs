@@ -21,7 +21,7 @@ public class ShelfManager : MonoBehaviour
         var prefab = G.figureManager.viewShelfFigurePrefab;
         var newFigure = Instantiate(prefab);
         newFigure.FigureId = figureId;
-        newFigure.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        newFigure.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
         slot.PlaceFigure(newFigure);
         return true;
@@ -47,7 +47,7 @@ public class ShelfManager : MonoBehaviour
                 var prefab = G.figureManager.viewShelfFigurePrefab;
                 var newFigure = Instantiate(prefab);
                 newFigure.FigureId = figureId;
-                newFigure.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+                newFigure.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
                 slot.PlaceFigure(newFigure);
                 return true;

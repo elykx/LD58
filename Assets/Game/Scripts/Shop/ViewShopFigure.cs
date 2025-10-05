@@ -1,15 +1,21 @@
+using LitMotion;
 using UnityEngine;
 
 public class ViewShopFigure : MonoBehaviour
 {
     public string FigureId;
-
+    public SpriteRenderer figureSprite;
 
     private Vector3 offset;
     private TooltipShower tooltip;
     private bool isDragging = false;
     private Vector3 originalPos;
     private float fixedY;
+
+    private MotionHandle swayHandle;
+    private float baseSway = 10f;
+    private float dragSway = 25f;
+    private float swayDuration = 1f;
 
 
     private void Awake()
@@ -20,9 +26,12 @@ public class ViewShopFigure : MonoBehaviour
 
     void Start()
     {
+        figureSprite.sprite = G.figureManager.GetFigure(FigureId).sprite;
         originalPos = transform.position;
         tooltip = GetComponent<TooltipShower>();
         UpdateTooltip();
+
+        StartSway(baseSway);
     }
 
     private void UpdateTooltip()
@@ -81,6 +90,9 @@ public class ViewShopFigure : MonoBehaviour
         isDragging = true;
         fixedY = transform.position.y;
 
+        StartSway(dragSway);
+
+
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
         Plane dragPlane = new Plane(Vector3.up, new Vector3(0, fixedY, 0));
 
@@ -108,6 +120,8 @@ public class ViewShopFigure : MonoBehaviour
     private void EndDrag()
     {
         isDragging = false;
+
+        StartSway(baseSway);
 
         BuyArea nearest = FindNearestBuyArea();
         Debug.Log("nearest: " + nearest);
@@ -170,4 +184,19 @@ public class ViewShopFigure : MonoBehaviour
         return nearest;
     }
 
+    private void StartSway(float amplitude)
+    {
+        if (swayHandle.IsActive())
+        {
+            swayHandle.Cancel();
+        }
+
+        swayHandle = LMotion.Create(-amplitude, amplitude, swayDuration)
+            .WithLoops(-1, LoopType.Yoyo)
+            .Bind(rotZ =>
+            {
+                transform.localRotation = Quaternion.Euler(0, 0, rotZ);
+            })
+            .AddTo(gameObject);
+    }
 }

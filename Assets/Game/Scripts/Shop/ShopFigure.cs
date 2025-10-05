@@ -15,12 +15,12 @@ public class ShopFigure : MonoBehaviour
 
     public List<Figure> AvailableFiguresToBuy(int lvl)
     {
-        return FigureFactory.GetFiguresForLevel(lvl);
+        return FigureGenerator.GetFiguresForLevel(lvl);
     }
 
     public List<Figure> AvailableFiguresToSwap(int lvl)
     {
-        return FigureFactory.GetFiguresForLevel(lvl);
+        return FigureGenerator.GetFiguresForLevel(lvl);
     }
 
     public void BuyFigure(Figure figure)

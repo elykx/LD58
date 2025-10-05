@@ -4,10 +4,12 @@ using LitMotion.Extensions;
 
 public class CameraMove : MonoBehaviour
 {
-    public Transform shopTransform; 
+    public Transform shopTransform;
     public Transform baseTransform;
+    public Transform bedTransform;
     public float shopDuration = 2f;
     public float baseDuration = 2f;
+    public float bedDuration = 2f;
 
     public void MoveCameraToShop()
     {
@@ -24,6 +26,15 @@ public class CameraMove : MonoBehaviour
             .BindToPosition(transform);
 
         LMotion.Create(transform.rotation.eulerAngles, baseTransform.rotation.eulerAngles, baseDuration)
+            .BindToEulerAngles(transform);
+    }
+    
+    public void MoveCameraToBed()
+    {
+        LMotion.Create(transform.position, bedTransform.position, bedDuration)
+            .BindToPosition(transform);
+
+        LMotion.Create(transform.rotation.eulerAngles, bedTransform.rotation.eulerAngles, bedDuration)
             .BindToEulerAngles(transform);
     }
 }

@@ -31,13 +31,14 @@ public class Main : MonoBehaviour
 
     private void InitDefaultPlayerFiguresInventory()
     {
-        var enemy1 = new Figure("skeleton", "Скелет", 500, 15, 4, 5, 1);
-        enemy1.skills.Add(new Skill("Удар", Skill.SkillType.Attack, 30, 1));
-        G.figureManager.AddFigure(FigureConsts.baseFigure);
-        G.figureManager.AddFigure(enemy1);
+        var base1 = FigureGenerator.GetFiguresForLevel(1)[0];
+        var base2 = FigureGenerator.GetFiguresForLevel(1)[0];
 
-        G.shelfManager.AddFigureToSlot(FigureConsts.baseFigure.id, 1);
-        G.shelfManager.AddFigureToSlot(FigureConsts.baseFigure.id, 3);
+        G.figureManager.AddFigure(base1);
+        G.figureManager.AddFigure(base2);
+
+        G.shelfManager.AddFigureToSlot(base1.id, 0);
+        G.shelfManager.AddFigureToSlot(base2.id, 2);
     }
 
     void Update()
@@ -45,12 +46,6 @@ public class Main : MonoBehaviour
         string time = G.timer.GetTimeFormatted();
         G.ui.timer.text = time;
         G.ui.money.text = StringUtils.FormatNumber(G.playerData.money);
-
-        // Debug // TODO: remove
-        if (Input.GetKeyUp(KeyCode.F))
-        {
-            G.shopFigures.BuyRandomFigure();
-        }
     }
 
     private void OnNightStart()
@@ -62,9 +57,7 @@ public class Main : MonoBehaviour
     {
         if (nightReady)
         {
-            var enemy1 = new Figure("skeleton", "Скелет", 500, 15, 4, 5, 1);
-            enemy1.skills.Add(new Skill("Удар", Skill.SkillType.Attack, 30, 1));
-            G.battleSystem.StartBattle(new LevelData("test", 1, new List<string>(new string[] { "skeleton" }), new BattleReward(0, 0, new List<string>())));
+            G.battleSystem.StartBattle(LevelManager.GetLevelById("level_1"));
         }
         else
         {

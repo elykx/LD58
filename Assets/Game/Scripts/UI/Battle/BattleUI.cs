@@ -17,25 +17,25 @@ public class BattleUI : MonoBehaviour
 
     public void SetBattleState(BattleState _state)
     {
-        state.gameObject.SetActive(true);
-        switch (_state)
-        {
-            case BattleState.PlayerTurn:
-                state.text = "Player Turn";
-                break;
-            case BattleState.WaitingForTarget:
-                state.text = "Waiting For Target";
-                break;
-            case BattleState.EnemyTurn:
-                state.text = "Enemy Turn";
-                break;
-            case BattleState.Victory:
-                state.text = "Victory";
-                break;
-            case BattleState.Defeat:
-                state.text = "Defeat";
-                break;
-        }
+        // state.gameObject.SetActive(true);
+        // switch (_state)
+        // {
+        //     case BattleState.PlayerTurn:
+        //         state.text = "Player Turn";
+        //         break;
+        //     case BattleState.WaitingForTarget:
+        //         state.text = "Waiting For Target";
+        //         break;
+        //     case BattleState.EnemyTurn:
+        //         state.text = "Enemy Turn";
+        //         break;
+        //     case BattleState.Victory:
+        //         state.text = "Victory";
+        //         break;
+        //     case BattleState.Defeat:
+        //         state.text = "Defeat";
+        //         break;
+        // }
     }
 
     public void SetTurnOrder(Queue<BattleFigureView> turnOrder)

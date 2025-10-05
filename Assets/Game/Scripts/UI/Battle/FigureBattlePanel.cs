@@ -42,11 +42,11 @@ public class FigureBattlePanel : MonoBehaviour
 
     private void OnSkillClicked(Skill skill)
     {
-        Debug.Log("Skill clicked: " + skill.skillName);
-        if (G.battleSystem != null)
-        {
-            G.battleSystem.OnSkillSelected(skill); // Передаёт навык в BattleSystem
-        }
+        // Debug.Log("Skill clicked: " + skill.skillName);
+        // if (G.battleSystem != null)
+        // {
+        //     G.battleSystem.OnSkillSelected(skill); // Передаёт навык в BattleSystem
+        // }
     }
 
     public void Show() => gameObject.SetActive(true);
