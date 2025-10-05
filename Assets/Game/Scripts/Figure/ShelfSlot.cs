@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class ShelfSlot : MonoBehaviour
 {
-    [HideInInspector] public ViewShelfFigure currentFigure;
+    public ViewShelfFigure currentFigure;
     public bool IsEmpty => currentFigure == null;
     private SpriteRenderer spriteRenderer;
 
@@ -19,18 +19,38 @@ public class ShelfSlot : MonoBehaviour
         spriteRenderer.enabled = true;
     }
 
-     public void HideSprite()
+    public void HideSprite()
     {
         spriteRenderer.enabled = false;
     }
 
     public void PlaceFigure(ViewShelfFigure figure)
     {
-        if (!IsEmpty) return;
+        Debug.Log($"PlaceFigure called for slot, IsEmpty: {IsEmpty}, figure: {figure.FigureId}");
 
+        // Если слот занят - не размещаем
+        if (!IsEmpty)
+        {
+            Debug.Log("Slot is already occupied!");
+            return;
+        }
+
+        // Получаем старый слот фигуры
+        var oldSlot = figure.currentSlot;
+
+        // СНАЧАЛА очищаем старый слот
+        if (oldSlot != null && oldSlot != this)
+        {
+            Debug.Log($"Clearing old slot");
+            oldSlot.Clear();
+        }
+
+        // ПОТОМ устанавливаем в новый слот
         currentFigure = figure;
-        figure.transform.position = transform.position;
         figure.currentSlot = this;
+        figure.transform.position = transform.position;
+
+        Debug.Log($"Figure {figure.FigureId} placed successfully");
     }
 
     public void Clear()

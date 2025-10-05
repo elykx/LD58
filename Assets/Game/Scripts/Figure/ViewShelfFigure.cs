@@ -5,7 +5,7 @@ using UnityEngine;
 public class ViewShelfFigure : MonoBehaviour
 {
     public string FigureId;
-    [HideInInspector] public ShelfSlot currentSlot;
+    public ShelfSlot currentSlot;
     private Vector3 offset;
     public SpriteRenderer figureSprite;
 
@@ -17,6 +17,8 @@ public class ViewShelfFigure : MonoBehaviour
     private MotionHandle dragMotionHandle;
     private Vector3 originalScale;
     private float nextIdleTime;
+    private bool isBeingDestroyed = false;
+
 
     private void Awake()
     {
@@ -26,9 +28,10 @@ public class ViewShelfFigure : MonoBehaviour
 
     void Start()
     {
-        figureSprite.sprite = G.figureManager.GetFigure(FigureId).sprite;
+        Figure fig = G.figureManager.GetFigure(FigureId);
+        figureSprite.sprite = fig.sprite;
         tooltip = GetComponent<TooltipShower>();
-        UpdateTooltip();
+        UpdateTooltip(fig);
 
         ScheduleNextIdleAnimation();
     }
@@ -39,10 +42,10 @@ public class ViewShelfFigure : MonoBehaviour
         if (dragMotionHandle.IsActive()) dragMotionHandle.Cancel();
     }
 
-    private void UpdateTooltip()
+    private void UpdateTooltip(Figure figureInDb)
     {
-        Figure data = G.figureManager.GetFigure(FigureId);
-        if (tooltip != null)
+        Figure data = figureInDb;
+        if (tooltip != null && data != null)
         {
             // Заголовок: имя + уровень
             tooltip.tooltipText =
@@ -60,6 +63,19 @@ public class ViewShelfFigure : MonoBehaviour
 
     private void Update()
     {
+        if (isBeingDestroyed) return;
+
+
+        var figureInDb = G.figureManager.GetFigure(FigureId);
+        if (figureInDb == null || figureInDb.currentHealth <= 0)
+        {
+            Debug.Log($"Figure {FigureId} is dead / REMOVE");
+            isBeingDestroyed = true; // <-- УСТАНОВИТЬ ФЛАГ
+            G.shelfManager.RemoveFigure(FigureId);
+            Destroy(gameObject);
+            return; // <-- ВЫЙТИ ИЗ UPDATE
+        }
+        UpdateTooltip(figureInDb);
 
         if (!isDragging && Time.time >= nextIdleTime)
         {
@@ -71,10 +87,9 @@ public class ViewShelfFigure : MonoBehaviour
         {
             if (IsMouseOverThis())
             {
-                UpdateTooltip();
                 StartDrag();
                 G.shelfManager.ShowSlotsSprites();
-                G.shopFigures.ShowSellArea();
+                G.shelfManager.ShowSellArea();
             }
         }
 
@@ -87,7 +102,7 @@ public class ViewShelfFigure : MonoBehaviour
         {
             EndDrag();
             G.shelfManager.HideSlotsSprites();
-            G.shopFigures.HideSellArea();
+            G.shelfManager.HideSellArea();
         }
     }
 
@@ -105,14 +120,14 @@ public class ViewShelfFigure : MonoBehaviour
         switch (animType)
         {
             case 0: // Подпрыгивание
-                Vector3 startPos = transform.localPosition; 
+                Vector3 startPos = transform.localPosition;
                 idleMotionHandle = LMotion.Create(0f, 0.2f, 0.3f)
                     .WithEase(Ease.OutQuad)
                     .WithLoops(2, LoopType.Yoyo)
                     .Bind(offset =>
                     {
                         Vector3 pos = startPos;
-                        pos.y += offset; 
+                        pos.y += offset;
                         transform.localPosition = pos;
                     })
                     .AddTo(gameObject);
@@ -181,9 +196,9 @@ public class ViewShelfFigure : MonoBehaviour
                 transform.localRotation = Quaternion.Euler(0, 0, angle);
             })
             .AddTo(gameObject);
+
         if (currentSlot != null)
             currentSlot.Clear();
-
     }
 
     private void DragUpdate()
@@ -195,29 +210,30 @@ public class ViewShelfFigure : MonoBehaviour
     {
         isDragging = false;
 
-        // Останавливаем покачивание при драге
         if (dragMotionHandle.IsActive()) dragMotionHandle.Cancel();
-
-        // Плавно возвращаем rotation к нулю
         transform.localRotation = Quaternion.identity;
 
         ShelfSlot nearest = FindNearestSlot();
-        if (nearest != null && nearest.IsEmpty)
+
+        // Проверяем что слот найден И (пустой ИЛИ это наш текущий слот)
+        if (nearest != null && (nearest.IsEmpty || nearest == currentSlot))
         {
             nearest.PlaceFigure(this);
         }
-        else if (nearest == null)
+        else
         {
+            // Проверяем зону продажи
             SellArea sellZone = FindSellZone();
             if (sellZone != null)
             {
+                Debug.Log("Selling figure " + FigureId);
                 G.shopFigures.SellFigure(FigureId);
-                Destroy(gameObject);
             }
-        }
-        else if (currentSlot != null)
-        {
-            currentSlot.PlaceFigure(this);
+            else if (currentSlot != null)
+            {
+                // Возвращаем в текущий слот
+                currentSlot.PlaceFigure(this);
+            }
         }
 
         ScheduleNextIdleAnimation();
@@ -233,9 +249,9 @@ public class ViewShelfFigure : MonoBehaviour
 
     private ShelfSlot FindNearestSlot()
     {
-        float radius = 0.5f;
+        float maxDistance = 0.5f;
         int slotMask = LayerMask.GetMask("ShellPos");
-        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, radius, slotMask);
+        Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, maxDistance, slotMask);
 
         ShelfSlot nearest = null;
         float minDist = float.MaxValue;
@@ -252,6 +268,11 @@ public class ViewShelfFigure : MonoBehaviour
                     nearest = slot;
                 }
             }
+        }
+
+        if (nearest != null && minDist > maxDistance)
+        {
+            return null;
         }
 
         return nearest;

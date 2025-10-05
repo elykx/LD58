@@ -5,6 +5,9 @@ public class ShelfManager : MonoBehaviour
 {
     [Header("Слоты шкафа")]
     [SerializeField] private List<ShelfSlot> slots;
+    public SellArea sellArea;
+    public int currentNumFiguresInShelf = 0;
+
 
     void Awake()
     {
@@ -24,19 +27,11 @@ public class ShelfManager : MonoBehaviour
         newFigure.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
         slot.PlaceFigure(newFigure);
+        currentNumFiguresInShelf++;
         return true;
     }
 
-    public bool RemoveFigureFromSlot(int slotIndex)
-    {
-        if (slotIndex < 0 || slotIndex >= slots.Count) return false;
 
-        ShelfSlot slot = slots[slotIndex];
-        if (slot.IsEmpty) return false;
-
-        slot.Clear();
-        return true;
-    }
 
     public bool AddFigureToFirstEmpty(string figureId)
     {
@@ -49,6 +44,7 @@ public class ShelfManager : MonoBehaviour
                 newFigure.FigureId = figureId;
                 newFigure.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
+                currentNumFiguresInShelf++;
                 slot.PlaceFigure(newFigure);
                 return true;
             }
@@ -61,36 +57,53 @@ public class ShelfManager : MonoBehaviour
         return slots.IndexOf(slot);
     }
 
+    public ShelfSlot GetSlotFromFigure(string figureId)
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (slots[i].currentFigure == null) continue;
+            if (slots[i].currentFigure.FigureId == figureId)
+            {
+                return slots[i];
+            }
+        }
+        return null;
+    }
     public ViewShelfFigure GetFigureFromSlot(int slotIndex)
     {
         if (slotIndex < 0 || slotIndex >= slots.Count) return null;
         return slots[slotIndex].currentFigure;
     }
 
-    public int GetSlotIndexOfFigure(Figure figure)
+    public void RemoveFigure(string figureId)
     {
         for (int i = 0; i < slots.Count; i++)
         {
-            if (slots[i].currentFigure != null && slots[i].currentFigure.FigureId == figure.id)
-                return i;
+            if (slots[i].currentFigure != null && slots[i].currentFigure.FigureId == figureId)
+            {
+                RemoveFigureFromSlot(i);
+                return;
+            }
         }
-        return -1;
     }
 
-    public void RemoveFigure(Figure figure)
+    public bool RemoveFigureFromSlot(int slotIndex)
     {
-        for (int i = 0; i < slots.Count; i++)
-        {
-            if (slots[i].currentFigure != null && slots[i].currentFigure.FigureId == figure.id)
-                RemoveFigureFromSlot(i);
-        }
+        if (slotIndex < 0 || slotIndex >= slots.Count) return false;
+
+        ShelfSlot slot = slots[slotIndex];
+        if (slot.IsEmpty) return false;
+
+        slot.Clear();
+        currentNumFiguresInShelf--;
+        return true;
     }
 
     public void ShowSlotsSprites()
     {
         foreach (var slot in slots)
         {
-            if (slot.currentFigure == null)
+            if (slot.IsEmpty)
             {
                 slot.ShowSprite();
             }
@@ -102,6 +115,28 @@ public class ShelfManager : MonoBehaviour
         foreach (var slot in slots)
         {
             slot.HideSprite();
+        }
+    }
+
+    public void ShowSellArea()
+    {
+        sellArea.gameObject.SetActive(true);
+    }
+
+    public void HideSellArea()
+    {
+        sellArea.gameObject.SetActive(false);
+    }
+
+    public bool CheckFull()
+    {
+        if (currentNumFiguresInShelf >= slots.Count)
+        {
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 }

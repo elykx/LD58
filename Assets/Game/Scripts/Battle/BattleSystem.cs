@@ -19,6 +19,7 @@ public class BattleFighterData
     public Figure figure;
     public float actionBar = 0f;
     public bool isActing = false;
+    public bool isDead = false; // НОВОЕ: флаг смерти
 }
 
 [System.Serializable]
@@ -53,24 +54,13 @@ public class BattleSystem : MonoBehaviour
 
     [Header("Настройки боя")]
     public float actionDelay = 0.5f;
-    public float turnCalculationInterval = 0.1f;
+    public float turnCalculationInterval = 0.05f;
 
     private List<BattleFighterData> allFighters = new();
     public LevelData currentLevel;
     private bool battleActive = false;
     private float battleTimer = 0f;
     public BattleState state;
-
-    // public List<BattleFigureView> playerViews = new();
-    // public List<BattleFigureView> enemyViews = new();
-    // public Queue<BattleFigureView> turnOrder = new();
-    // private BattleFigureView currentFighter;
-    // private Skill selectedSkill;
-
-    // public BattleState state;
-    // private LevelData currentLevel;
-    // private bool battleActive = false;
-
 
     void Awake()
     {
@@ -85,9 +75,12 @@ public class BattleSystem : MonoBehaviour
         battleTimer += Time.deltaTime;
 
         // Обновляем шкалы действий только для живых бойцов
-        foreach (var fighter in allFighters.Where(f => f.figure.IsAlive()))
+        foreach (var fighter in allFighters.Where(f => !f.isDead && f.figure.IsAlive()))
         {
-            fighter.actionBar += fighter.figure.speed * Time.deltaTime;
+            fighter.actionBar += fighter.figure.speed * Time.deltaTime * 5f;
+
+            // Обновляем визуальную полосу готовности
+            fighter.view.UpdateActionBar(fighter.actionBar);
 
             if (fighter.actionBar >= 100f && !fighter.isActing)
             {
@@ -110,6 +103,17 @@ public class BattleSystem : MonoBehaviour
         ClearBattle();
         SetupTeam(true); // Игроки
         SetupTeam(false); // Враги
+
+        // ИСПРАВЛЕНИЕ БАГА 3: Проверяем наличие игроков сразу после создания команд
+        bool playersExist = allFighters.Any(f => !f.figure.isEnemy);
+        if (!playersExist)
+        {
+            state = BattleState.Defeat;
+            battleUI?.SetBattleState(state);
+            OnBattleDefeat?.Invoke();
+            StartCoroutine(DelayedEndBattle());
+            return;
+        }
 
         state = BattleState.InProgress;
         battleUI?.SetBattleState(state);
@@ -139,18 +143,17 @@ public class BattleSystem : MonoBehaviour
         }
     }
 
-    // 0. Очистка битвы
     private void ClearBattle()
     {
         foreach (var fighter in allFighters)
         {
-            Destroy(fighter.view.gameObject);
+            if (fighter.view != null)
+                Destroy(fighter.view.gameObject);
         }
 
         allFighters.Clear();
     }
 
-    // 1. Собрать фигурки
     private void SetupTeam(bool isPlayer)
     {
         Transform[] positions = isPlayer ? playerPositions : enemyPositions;
@@ -158,11 +161,9 @@ public class BattleSystem : MonoBehaviour
             ? GetPlayerFigures()
             : currentLevel.enemyIds.ToArray();
 
-        Debug.Log($"Setup team: {string.Join(", ", figures)}");
         for (int i = 0; i < figures.Length && i < positions.Length; i++)
         {
             var figure = G.figureManager.GetFigure(figures[i]);
-            Debug.Log($"Setup figure: {figure.name} + {figure.sprite}");
             figure.isEnemy = !isPlayer;
             figure.battlePosition = i;
 
@@ -173,7 +174,8 @@ public class BattleSystem : MonoBehaviour
             {
                 view = view,
                 figure = figure,
-                actionBar = Random.Range(0f, 30f) // Случайный старт
+                actionBar = Random.Range(0f, 30f),
+                isDead = false
             };
 
             allFighters.Add(fighterData);
@@ -191,16 +193,18 @@ public class BattleSystem : MonoBehaviour
                 playerFigures.Add(fig.FigureId);
         }
 
-        if (playerFigures.Count == 0)
-        {
-            battleActive = false;
-        }
-
         return playerFigures.ToArray();
     }
 
     private IEnumerator PerformAction(BattleFighterData fighter)
     {
+        // ИСПРАВЛЕНИЕ БАГА 2: Проверяем жив ли боец перед началом действия
+        if (fighter.isDead || !fighter.figure.IsAlive())
+        {
+            fighter.isActing = false;
+            yield break;
+        }
+
         fighter.isActing = true;
         fighter.actionBar = 0f;
 
@@ -208,7 +212,8 @@ public class BattleSystem : MonoBehaviour
         var skill = ChooseSkill(fighter.figure);
         var target = ChooseTarget(fighter, skill);
 
-        if (target == null)
+        // ИСПРАВЛЕНИЕ БАГА 1: Проверяем валидность цели и что она жива
+        if (target == null || target.isDead || !target.figure.IsAlive())
         {
             fighter.isActing = false;
             yield break;
@@ -220,12 +225,23 @@ public class BattleSystem : MonoBehaviour
 
         yield return new WaitForSeconds(actionDelay);
 
+        // ИСПРАВЛЕНИЕ БАГА 2: Повторная проверка перед выполнением
+        if (fighter.isDead || !fighter.figure.IsAlive() || target.isDead || !target.figure.IsAlive())
+        {
+            fighter.view.SetActiveHighlight(false);
+            if (!target.isDead)
+                target.view.SetTargetHighlight(false);
+            fighter.isActing = false;
+            yield break;
+        }
+
         // Выполнение действия
         yield return ExecuteSkill(fighter, target, skill);
 
         // Убираем подсветку
         fighter.view.SetActiveHighlight(false);
-        target.view.SetTargetHighlight(false);
+        if (!target.isDead)
+            target.view.SetTargetHighlight(false);
 
         // Уменьшаем кулдауны
         fighter.figure.ReduceCooldowns();
@@ -262,15 +278,15 @@ public class BattleSystem : MonoBehaviour
         switch (skill.type)
         {
             case Skill.SkillType.Attack:
-                weight += 10; // Приоритет атаки
+                weight += 10;
                 break;
 
             case Skill.SkillType.Heal when figure.currentHealth < figure.maxHealth * 0.5f:
-                weight += 15; // Лечение при низком здоровье
+                weight += 15;
                 break;
 
             case Skill.SkillType.Buff when battleTimer < 5f:
-                weight += 8; // Баффы в начале боя
+                weight += 8;
                 break;
         }
 
@@ -302,7 +318,8 @@ public class BattleSystem : MonoBehaviour
             : allFighters.Where(f => !f.figure.isEnemy);
 
         return targetPool
-            .Where(f => f.figure.IsAlive() &&
+            .Where(f => !f.isDead &&
+                        f.figure.IsAlive() &&
                         f.figure.battlePosition >= skill.minRange &&
                         f.figure.battlePosition <= skill.maxRange)
             .ToList();
@@ -366,7 +383,9 @@ public class BattleSystem : MonoBehaviour
 
         if (!target.figure.IsAlive())
         {
+            target.isDead = true; // ИСПРАВЛЕНИЕ: Помечаем как мёртвого
             target.view.PlayDeathAnimation();
+            G.figureManager.RemoveFigureById(target.figure.id);
             yield return new WaitForSeconds(0.5f);
         }
     }
@@ -383,7 +402,7 @@ public class BattleSystem : MonoBehaviour
     private IEnumerator ExecuteBuff(BattleFighterData actor, BattleFighterData target, Skill skill)
     {
         target.figure.damage += skill.power;
-        //TODO target.view.ShowBuffEffect(); 
+        target.view.ShowBuffEffect();
 
         yield return new WaitForSeconds(0.3f);
     }
@@ -391,15 +410,15 @@ public class BattleSystem : MonoBehaviour
     private IEnumerator ExecuteDebuff(BattleFighterData actor, BattleFighterData target, Skill skill)
     {
         target.figure.defense = Mathf.Max(0, target.figure.defense - skill.power);
-        //TODO target.view.ShowDebuffEffect();
+        target.view.ShowDebuffEffect();
 
         yield return new WaitForSeconds(0.3f);
     }
 
     private void CheckBattleEnd()
     {
-        bool playersAlive = allFighters.Any(f => !f.figure.isEnemy && f.figure.IsAlive());
-        bool enemiesAlive = allFighters.Any(f => f.figure.isEnemy && f.figure.IsAlive());
+        bool playersAlive = allFighters.Any(f => !f.figure.isEnemy && !f.isDead && f.figure.IsAlive());
+        bool enemiesAlive = allFighters.Any(f => f.figure.isEnemy && !f.isDead && f.figure.IsAlive());
 
         if (!playersAlive)
         {
@@ -428,5 +447,4 @@ public class BattleSystem : MonoBehaviour
         yield return new WaitForSeconds(2f);
         G.main.EndBattle();
     }
-
 }

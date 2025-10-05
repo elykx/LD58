@@ -157,15 +157,18 @@ public static class FigureGenerator
 
         foreach (var template in FigureTemplates)
         {
-            // Проверяем доступность по стоимости
-            int figureCost = template.baseCost + template.costPerLevel * (level - 1);
-            if (figureCost <= level * 10)
+            if (!template.enemy)
             {
-                // Генерируем несколько вариантов одного типа
-                int variantsCount = UnityEngine.Random.Range(1, 3);
-                for (int i = 0; i < variantsCount; i++)
+                // Проверяем доступность по стоимости
+                int figureCost = template.baseCost + template.costPerLevel * (level - 1);
+                if (figureCost <= G.playerData.money)
                 {
-                    figures.Add(GenerateFigure(template, level));
+                    // Генерируем несколько вариантов одного типа
+                    int variantsCount = UnityEngine.Random.Range(1, 3);
+                    for (int i = 0; i < variantsCount; i++)
+                    {
+                        figures.Add(GenerateFigure(template, level));
+                    }
                 }
             }
         }
@@ -219,13 +222,11 @@ public static class FigureGenerator
 
             if (allSprites.Length > 0)
             {
-                Debug.Log("sprite names: " + string.Join(", ", allSprites.Select(s => s.name)));
                 Sprite loadedSprite = allSprites.FirstOrDefault(s => s.name == spriteName);
 
                 if (loadedSprite != null)
                 {
                     figure.sprite = loadedSprite;
-                    Debug.Log($"[FigureGenerator] ✓ Спрайт '{spriteName}' успешно загружен для {figure.name}");
                 }
             }
         }

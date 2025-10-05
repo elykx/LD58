@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class FigureManager : MonoBehaviour
 {
-    public List<Figure> figures = new List<Figure>();
+    public List<Figure> figures = new List<Figure>(); // TODO: УДАЛЯТЬ УБИТЫХ
     public ViewShelfFigure viewShelfFigurePrefab;
     public ViewShopFigure viewShopFigurePrefab;
 

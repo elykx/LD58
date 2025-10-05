@@ -128,9 +128,7 @@ public class ViewShopFigure : MonoBehaviour
         if (nearest != null)
         {
             Figure data = G.figureManager.GetFigure(FigureId);
-            Debug.Log(data);
-
-            if (data != null && G.playerData.money >= data.cost)
+            if (data != null && G.playerData.money >= data.cost && !G.shelfManager.CheckFull())
             {
                 G.shopFigures.BuyFigure(data);
                 Destroy(gameObject);
@@ -138,8 +136,6 @@ public class ViewShopFigure : MonoBehaviour
             else
             {
                 Debug.Log("monet dasdsaasd");
-
-                // Вернуть обратно на место, если не хватает денег
                 ReturnToShopPosition();
             }
         }

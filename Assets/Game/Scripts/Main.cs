@@ -8,6 +8,7 @@ public class Main : MonoBehaviour
 {
     private bool nightReady = false;
     public GameObject shop;
+    public GameObject disableWhenShopOpen;
 
     private void Awake()
     {
@@ -25,7 +26,6 @@ public class Main : MonoBehaviour
         G.timer.OnNightStart += OnNightStart;
         G.timer.StartDay();
 
-        // Debug start figures //TODO: add real figures
         InitDefaultPlayerFiguresInventory();
     }
 
@@ -79,6 +79,7 @@ public class Main : MonoBehaviour
         if (G.playerData.current_pos != "main" || G.playerData.shopAlreadyOpened) return;
         G.cameraMove.MoveCameraToShop();
         shop.SetActive(true);
+        disableWhenShopOpen.SetActive(false);
         G.shopFigures.GenerateShopFigures(G.playerData.level);
         G.playerData.current_pos = "shop";
         G.playerData.shopAlreadyOpened = true;
@@ -87,6 +88,7 @@ public class Main : MonoBehaviour
     public void CloseShop()
     {
         shop.SetActive(false);
+        disableWhenShopOpen.SetActive(true);
         G.cameraMove.MoveCameraToBase();
         G.playerData.current_pos = "main";
     }

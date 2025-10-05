@@ -5,12 +5,10 @@ using UnityEngine;
 public class ShopFigure : MonoBehaviour
 {
     public List<ShopSlot> shopSlots;
-    public SellArea sellArea;
 
     void Awake()
     {
         G.shopFigures = this;
-        HideSellArea();
     }
 
     public List<Figure> AvailableFiguresToBuy(int lvl)
@@ -50,8 +48,9 @@ public class ShopFigure : MonoBehaviour
         if (figure != null)
         {
             G.playerData.money += figure.cost;
-            G.shelfManager.RemoveFigure(figure);
         }
+
+        G.figureManager.RemoveFigureById(figureId);
     }
     // public void SwapFigures(Figure toAdd, Figure toRemove)
     // {
@@ -90,16 +89,6 @@ public class ShopFigure : MonoBehaviour
                 slot.currentFigure = null;
             }
         }
-    }
-
-    public void ShowSellArea()
-    {
-        sellArea.gameObject.SetActive(true);
-    }
-
-    public void HideSellArea()
-    {
-        sellArea.gameObject.SetActive(false);
     }
 
 }
