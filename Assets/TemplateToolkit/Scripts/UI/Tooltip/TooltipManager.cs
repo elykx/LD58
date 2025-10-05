@@ -8,36 +8,22 @@ public class TooltipManager : MonoBehaviour
 
     [Header("References")]
     [SerializeField] private GameObject tooltipPanel;
-    [SerializeField] private TextMeshProUGUI tooltipTitle;
-    [SerializeField] private TextMeshProUGUI tooltipContent;
-    [SerializeField] private Image backgroundImage;
-
-    [Header("Default Style")]
-    [SerializeField] private TooltipStyle defaultStyle;
+    [SerializeField] private TextMeshProUGUI tooltipText;
+    [SerializeField] private ContentSizeFitter contentSizeFitter;
+    [SerializeField] private LayoutElement layoutElement;
 
     [Header("Settings")]
-    [SerializeField] private Vector2 offset = new Vector2(15, 0);
-    [SerializeField] private float showDelay = 0.3f;
-    [SerializeField] private TooltipPosition defaultPosition = TooltipPosition.Right;
+    [SerializeField] private float showDelay = 0.5f;
     [SerializeField] private float maxWidth = 300f;
-    [SerializeField] private float closerOffset = 5f;
+    [SerializeField] private float padding = 10f;
+    [SerializeField] private Vector2 offset = new Vector2(10, -10); // Смещение от курсора
 
-    private RectTransform rectTransform;
-    private Canvas parentCanvas;
+    private RectTransform tooltipRect;
+    private RectTransform canvasRect;
+    private Canvas canvas;
     private float delayTimer;
-    private bool isTimerRunning;
-    private LayoutElement titleLayoutElement;
-    private LayoutElement contentLayoutElement;
-    private VerticalLayoutGroup layoutGroup;
-
-
-    public enum TooltipPosition
-    {
-        Right,
-        Left,
-        Top,
-        Bottom
-    }
+    private bool isWaitingToShow;
+    private string pendingContent;
 
     private void Awake()
     {
@@ -50,205 +36,164 @@ public class TooltipManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        rectTransform = tooltipPanel.GetComponent<RectTransform>();
-        parentCanvas = GetComponentInParent<Canvas>();
-        layoutGroup = tooltipPanel.GetComponent<VerticalLayoutGroup>();
-
-        InitializeTextComponents();
+        InitializeComponents();
         HideTooltip();
     }
 
-    private void InitializeTextComponents()
+    private void InitializeComponents()
     {
-        if (tooltipTitle != null)
+        tooltipRect = tooltipPanel.GetComponent<RectTransform>();
+        canvas = GetComponentInParent<Canvas>();
+        canvasRect = canvas.GetComponent<RectTransform>();
+
+        // Настройка ContentSizeFitter
+        if (contentSizeFitter == null)
         {
-            tooltipTitle.textWrappingMode = TextWrappingModes.Normal;
-            tooltipTitle.overflowMode = TextOverflowModes.Overflow;
-
-            titleLayoutElement = tooltipTitle.GetComponent<LayoutElement>();
-            if (titleLayoutElement == null)
+            contentSizeFitter = tooltipPanel.GetComponent<ContentSizeFitter>();
+            if (contentSizeFitter == null)
             {
-                titleLayoutElement = tooltipTitle.gameObject.AddComponent<LayoutElement>();
+                contentSizeFitter = tooltipPanel.AddComponent<ContentSizeFitter>();
             }
-            titleLayoutElement.preferredWidth = maxWidth;
         }
+        contentSizeFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        contentSizeFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        if (tooltipContent != null)
+        // Настройка LayoutElement для ограничения ширины
+        if (layoutElement == null)
         {
-            tooltipTitle.textWrappingMode = TextWrappingModes.Normal;
-            tooltipContent.overflowMode = TextOverflowModes.Overflow;
-
-            contentLayoutElement = tooltipContent.GetComponent<LayoutElement>();
-            if (contentLayoutElement == null)
+            layoutElement = tooltipText.GetComponent<LayoutElement>();
+            if (layoutElement == null)
             {
-                contentLayoutElement = tooltipContent.gameObject.AddComponent<LayoutElement>();
+                layoutElement = tooltipText.gameObject.AddComponent<LayoutElement>();
             }
-            contentLayoutElement.preferredWidth = maxWidth;
         }
+        layoutElement.preferredWidth = maxWidth;
+
+        // Настройка текста
+        tooltipText.textWrappingMode = TextWrappingModes.Normal;
+        tooltipText.overflowMode = TextOverflowModes.Overflow;
+
+        // Настройка якорей для правильного позиционирования
+        tooltipRect.pivot = new Vector2(0, 1); // Левый верхний угол
     }
-
 
     private void Update()
     {
-        if (isTimerRunning)
+        if (isWaitingToShow)
         {
             delayTimer -= Time.deltaTime;
             if (delayTimer <= 0)
             {
-                isTimerRunning = false;
-                tooltipPanel.SetActive(true);
+                isWaitingToShow = false;
+                ActuallyShowTooltip();
             }
         }
 
         if (tooltipPanel.activeSelf)
         {
-            UpdateTooltipPosition();
+            UpdatePosition();
         }
     }
 
-    private void UpdateTooltipPosition()
+    private void UpdatePosition()
     {
         Vector2 mousePosition = Input.mousePosition;
-        Vector2 screenSize = new Vector2(Screen.width, Screen.height);
 
-        Canvas.ForceUpdateCanvases();
-        LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
-
-        Vector2 tooltipSize = rectTransform.rect.size;
-        TooltipPosition position = defaultPosition;
-
-        if (position == TooltipPosition.Right && mousePosition.x + tooltipSize.x + offset.x > screenSize.x)
-        {
-            position = TooltipPosition.Left;
-        }
-
-        if (position == TooltipPosition.Left && mousePosition.x - tooltipSize.x - offset.x < 0)
-        {
-            position = TooltipPosition.Bottom;
-        }
-
-        if (position == TooltipPosition.Bottom && mousePosition.y - tooltipSize.y - offset.y < 0)
-        {
-            position = TooltipPosition.Top;
-        }
-
-        if (position == TooltipPosition.Top && mousePosition.y + tooltipSize.y + offset.y > screenSize.y)
-        {
-            position = TooltipPosition.Right;
-        }
-
-        Vector2 localPoint;
+        // Конвертируем позицию мыши в локальные координаты Canvas
+        Vector2 anchoredPosition;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
-            parentCanvas.GetComponent<RectTransform>(),
+            canvasRect,
             mousePosition,
-            parentCanvas.worldCamera,
-            out localPoint
+            canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera,
+            out anchoredPosition
         );
 
-        switch (position)
-        {
-            case TooltipPosition.Right:
-                localPoint.x += closerOffset;
-                break;
-            case TooltipPosition.Left:
-                localPoint.x -= tooltipSize.x + closerOffset;
-                break;
-            case TooltipPosition.Top:
-                localPoint.y += closerOffset;
-                break;
-            case TooltipPosition.Bottom:
-                localPoint.y -= tooltipSize.y + closerOffset;
-                break;
-        }
+        // Применяем смещение
+        anchoredPosition += offset;
 
-        rectTransform.anchoredPosition = localPoint;
-        ClampTooltipPositionToScreen();
-    }
-
-    private void ClampTooltipPositionToScreen()
-    {
-        Vector2 tooltipSize = rectTransform.rect.size;
-        Vector2 canvasSize = parentCanvas.GetComponent<RectTransform>().rect.size;
-        Vector2 position = rectTransform.anchoredPosition;
-
-        if (position.x + tooltipSize.x > canvasSize.x / 2)
-        {
-            position.x = canvasSize.x / 2 - tooltipSize.x;
-        }
-
-        if (position.x < -canvasSize.x / 2)
-        {
-            position.x = -canvasSize.x / 2;
-        }
-
-        if (position.y + tooltipSize.y > canvasSize.y / 2)
-        {
-            position.y = canvasSize.y / 2 - tooltipSize.y;
-        }
-
-        if (position.y < -canvasSize.y / 2)
-        {
-            position.y = -canvasSize.y / 2;
-        }
-
-        rectTransform.anchoredPosition = position;
-    }
-
-    public void ShowTooltip(string title, string content, TooltipStyle style = null)
-    {
-        TooltipStyle activeStyle = style != null ? style : defaultStyle;
-
-        if (activeStyle != null)
-        {
-            ApplyStyle(activeStyle);
-        }
-
-        tooltipTitle.gameObject.SetActive(!string.IsNullOrEmpty(title));
-        tooltipTitle.text = title;
-        tooltipContent.text = content;
-
+        // Форсируем обновление размера тултипа
         Canvas.ForceUpdateCanvases();
-        LayoutRebuilder.ForceRebuildLayoutImmediate(rectTransform);
 
-        delayTimer = showDelay;
-        isTimerRunning = true;
+        // Получаем актуальный размер тултипа
+        float tooltipWidth = layoutElement.preferredWidth + padding * 2;
+        float tooltipHeight = tooltipText.preferredHeight + padding * 2;
+
+        // Проверяем и корректируем позицию, чтобы тултип не выходил за границы экрана
+        float halfCanvasWidth = canvasRect.rect.width / 2;
+        float halfCanvasHeight = canvasRect.rect.height / 2;
+
+        // Проверка правой границы
+        if (anchoredPosition.x + tooltipWidth > halfCanvasWidth)
+        {
+            // Показываем слева от курсора
+            anchoredPosition.x = anchoredPosition.x - offset.x * 2 - tooltipWidth;
+        }
+
+        // Проверка левой границы
+        if (anchoredPosition.x < -halfCanvasWidth)
+        {
+            anchoredPosition.x = -halfCanvasWidth + padding;
+        }
+
+        // Проверка верхней границы
+        if (anchoredPosition.y > halfCanvasHeight)
+        {
+            anchoredPosition.y = halfCanvasHeight - padding;
+        }
+
+        // Проверка нижней границы
+        if (anchoredPosition.y - tooltipHeight < -halfCanvasHeight)
+        {
+            // Показываем над курсором
+            anchoredPosition.y = anchoredPosition.y - offset.y * 2 + tooltipHeight;
+        }
+
+        tooltipRect.anchoredPosition = anchoredPosition;
     }
+
+    public void ShowTooltip(string content)
+    {
+        if (string.IsNullOrEmpty(content))
+        {
+            HideTooltip();
+            return;
+        }
+
+        pendingContent = content;
+        delayTimer = showDelay;
+        isWaitingToShow = true;
+    }
+
+    private void ActuallyShowTooltip()
+    {
+        tooltipText.text = pendingContent;
+
+        // Форсируем обновление layout
+        Canvas.ForceUpdateCanvases();
+        LayoutRebuilder.ForceRebuildLayoutImmediate(tooltipRect);
+
+        tooltipPanel.SetActive(true);
+        UpdatePosition();
+    }
+
     public void HideTooltip()
     {
         tooltipPanel.SetActive(false);
-        isTimerRunning = false;
+        isWaitingToShow = false;
+        pendingContent = string.Empty;
     }
 
-    private void ApplyStyle(TooltipStyle style)
+    public void SetMaxWidth(float width)
     {
-        // Фон
-        if (backgroundImage != null)
+        maxWidth = width;
+        if (layoutElement != null)
         {
-            backgroundImage.color = style.backgroundColor;
+            layoutElement.preferredWidth = maxWidth;
         }
+    }
 
-        // Стиль заголовка
-        if (tooltipTitle != null)
-        {
-            tooltipTitle.color = style.titleColor;
-            tooltipTitle.fontSize = style.titleFontSize;
-            tooltipTitle.fontStyle = style.titleFontStyle;
-        }
-
-        // Стиль контента
-        if (tooltipContent != null)
-        {
-            tooltipContent.color = style.contentColor;
-            tooltipContent.fontSize = style.contentFontSize;
-            tooltipContent.fontStyle = style.contentFontStyle;
-        }
-
-        // Отступы
-        if (layoutGroup != null)
-        {
-            layoutGroup.padding = style.Padding;
-            layoutGroup.spacing = style.titleBottomPadding;
-        }
-
+    public void SetShowDelay(float delay)
+    {
+        showDelay = delay;
     }
 }

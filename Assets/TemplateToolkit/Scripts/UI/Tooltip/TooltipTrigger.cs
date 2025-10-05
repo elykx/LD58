@@ -3,145 +3,215 @@ using UnityEngine.EventSystems;
 
 public class TooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
-    public string tooltipTitle;
-    public string tooltipContent;
+    [Header("Content")]
+    [TextArea(3, 5)]
+    [SerializeField] private string tooltipContent = "Tooltip text";
 
-    [Header("Style")]
-    [SerializeField] private TooltipStyle customStyle;
-    [SerializeField] private bool useCustomStyle = false;
-
-    [Header("Raycast Settings")]
-    [SerializeField] private bool useManualRaycast = true; // Включить ручной raycast
-    [SerializeField] private LayerMask tooltipLayerMask = -1; // Все слои по умолчанию
+    [Header("Settings")]
+    [SerializeField] private bool useRichText = true; // Поддержка Rich Text для форматирования
+    [SerializeField] private bool isWorldObject = false; // true для 3D/2D объектов, false для UI
 
     private bool isMouseOver = false;
-    private Camera cam;
 
-    private void Awake()
+    private void Start()
     {
-        cam = Camera.main;
-    }
-
-    private void Update()
-    {
-        // Ручная проверка raycast для объектов с коллайдерами
-        if (useManualRaycast)
+        // Автоматическое определение типа объекта
+        if (!isWorldObject)
         {
-            bool wasOver = isMouseOver;
-            isMouseOver = IsMouseOverThis();
-
-            // Вошли в зону
-            if (isMouseOver && !wasOver)
+            // Проверяем, является ли объект UI элементом
+            if (GetComponent<RectTransform>() == null)
             {
-                if (!EventSystem.current.IsPointerOverGameObject())
-                {
-                    ShowTooltip();
-                }
+                isWorldObject = true;
             }
-            // Вышли из зоны
-            else if (!isMouseOver && wasOver)
+        }
+
+        // Проверка наличия необходимых компонентов для world объектов
+        if (isWorldObject)
+        {
+            Collider col = GetComponent<Collider>();
+            Collider2D col2D = GetComponent<Collider2D>();
+
+            if (col == null && col2D == null)
             {
-                HideTooltip();
+                Debug.LogWarning($"TooltipTrigger на объекте '{gameObject.name}' требует Collider или Collider2D для работы с world объектами!");
             }
         }
     }
 
-    private bool IsMouseOverThis()
+    #region UI Events
+    public void OnPointerEnter(PointerEventData eventData)
     {
-        if (cam == null) return false;
-
-        Vector2 mousePos = GetMouseWorldPos();
-
-        // Raycast по указанным слоям
-        RaycastHit2D[] hits = Physics2D.RaycastAll(mousePos, Vector2.zero, 0f, tooltipLayerMask);
-
-        // Проверяем все попадания
-        foreach (var hit in hits)
+        if (!isWorldObject)
         {
-            // Ищем TooltipTrigger в попаданиях
-            TooltipTrigger trigger = hit.collider.GetComponent<TooltipTrigger>();
-            if (trigger != null && trigger == this)
-            {
-                return true;
-            }
+            ShowTooltip();
         }
-
-        return false;
     }
 
-    private Vector2 GetMouseWorldPos()
+    public void OnPointerExit(PointerEventData eventData)
     {
-        Vector3 mousePos = Input.mousePosition;
-        mousePos.z = -cam.transform.position.z;
-        return cam.ScreenToWorldPoint(mousePos);
+        if (!isWorldObject)
+        {
+            HideTooltip();
+        }
     }
+    #endregion
 
-    // Для объектов с коллайдерами (старая система, если useManualRaycast = false)
+    #region World Object Events
     private void OnMouseEnter()
     {
-        if (useManualRaycast) return; // Игнорируем, если используем ручной raycast
-
-        if (!EventSystem.current.IsPointerOverGameObject())
+        if (isWorldObject && !IsPointerOverUI())
         {
-            isMouseOver = true;
             ShowTooltip();
         }
     }
 
     private void OnMouseExit()
     {
-        if (useManualRaycast) return;
-
-        isMouseOver = false;
-        HideTooltip();
+        if (isWorldObject)
+        {
+            HideTooltip();
+        }
     }
 
-    // Для UI элементов
-    public void OnPointerEnter(PointerEventData eventData)
+    private void OnMouseOver()
     {
-        if (useManualRaycast) return; // UI не нуждается в ручном raycast
-
-        isMouseOver = true;
-        ShowTooltip();
+        // Проверяем, не перешел ли курсор на UI
+        if (isWorldObject && isMouseOver && IsPointerOverUI())
+        {
+            HideTooltip();
+        }
     }
+    #endregion
 
-    public void OnPointerExit(PointerEventData eventData)
-    {
-        if (useManualRaycast) return;
-
-        isMouseOver = false;
-        HideTooltip();
-    }
-
+    #region Tooltip Control
     private void ShowTooltip()
     {
-        if (TooltipManager.Instance != null)
-        {
-            if (useCustomStyle && customStyle != null)
-            {
-                TooltipManager.Instance.ShowTooltip(tooltipTitle, tooltipContent, customStyle);
-            }
-            else
-            {
-                TooltipManager.Instance.ShowTooltip(tooltipTitle, tooltipContent);
-            }
-        }
+        if (TooltipManager.Instance == null) return;
+        if (string.IsNullOrEmpty(tooltipContent)) return;
+        if (isMouseOver) return; // Уже показан
+
+        string content = ProcessContent(tooltipContent);
+        TooltipManager.Instance.ShowTooltip(content);
+        isMouseOver = true;
     }
 
     private void HideTooltip()
     {
-        if (TooltipManager.Instance != null)
+        if (TooltipManager.Instance == null) return;
+        if (!isMouseOver) return; // Уже скрыт
+
+        TooltipManager.Instance.HideTooltip();
+        isMouseOver = false;
+    }
+
+    private string ProcessContent(string content)
+    {
+        // Обработка контента перед показом
+        if (!useRichText)
         {
-            TooltipManager.Instance.HideTooltip();
+            // Удаляем Rich Text теги если они отключены
+            content = System.Text.RegularExpressions.Regex.Replace(content, "<.*?>", string.Empty);
+        }
+
+        // Можно добавить дополнительную обработку
+        // Например, замену переменных: {playerName} -> ActualPlayerName
+
+        return content;
+    }
+    #endregion
+
+    #region Public Methods
+    public void SetTooltipContent(string content)
+    {
+        tooltipContent = content;
+
+        // Обновляем тултип если он уже показан
+        if (isMouseOver && TooltipManager.Instance != null)
+        {
+            string processedContent = ProcessContent(content);
+            TooltipManager.Instance.ShowTooltip(processedContent);
         }
     }
 
-    private void OnDisable()
+    public void AppendTooltipContent(string additionalContent)
     {
+        tooltipContent += "\n" + additionalContent;
+
         if (isMouseOver && TooltipManager.Instance != null)
         {
-            TooltipManager.Instance.HideTooltip();
-            isMouseOver = false;
+            string processedContent = ProcessContent(tooltipContent);
+            TooltipManager.Instance.ShowTooltip(processedContent);
         }
     }
+
+    public void ClearTooltipContent()
+    {
+        tooltipContent = string.Empty;
+        if (isMouseOver)
+        {
+            HideTooltip();
+        }
+    }
+
+    public string GetTooltipContent()
+    {
+        return tooltipContent;
+    }
+
+    public void SetRichTextEnabled(bool enabled)
+    {
+        useRichText = enabled;
+
+        if (isMouseOver && TooltipManager.Instance != null)
+        {
+            string processedContent = ProcessContent(tooltipContent);
+            TooltipManager.Instance.ShowTooltip(processedContent);
+        }
+    }
+    #endregion
+
+    #region Lifecycle
+    private void OnDisable()
+    {
+        if (isMouseOver)
+        {
+            HideTooltip();
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (isMouseOver)
+        {
+            HideTooltip();
+        }
+    }
+
+    private void OnApplicationFocus(bool hasFocus)
+    {
+        // Скрываем тултип при потере фокуса приложения
+        if (!hasFocus && isMouseOver)
+        {
+            HideTooltip();
+        }
+    }
+    #endregion
+
+    #region Utilities
+    private bool IsPointerOverUI()
+    {
+        // Проверка для разных систем ввода
+        if (EventSystem.current == null) return false;
+
+        // Для мыши
+        if (EventSystem.current.IsPointerOverGameObject())
+            return true;
+
+        // Для тача (мобильные устройства)
+        if (Input.touchCount > 0 && EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId))
+            return true;
+
+        return false;
+    }
+    #endregion
 }

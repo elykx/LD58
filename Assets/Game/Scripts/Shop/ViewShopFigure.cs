@@ -6,7 +6,7 @@ public class ViewShopFigure : MonoBehaviour
 
 
     private Vector3 offset;
-    private TooltipTrigger tooltip;
+    private TooltipShower tooltip;
     private bool isDragging = false;
     private Vector3 originalPos;
     private float fixedY;
@@ -21,7 +21,7 @@ public class ViewShopFigure : MonoBehaviour
     void Start()
     {
         originalPos = transform.position;
-        tooltip = GetComponent<TooltipTrigger>();
+        tooltip = GetComponent<TooltipShower>();
         UpdateTooltip();
     }
 
@@ -31,18 +31,15 @@ public class ViewShopFigure : MonoBehaviour
         if (tooltip != null)
         {
             // Заголовок: имя + уровень
-            tooltip.tooltipTitle =
-                $"<b><color=#FFD700>{data.name}</color></b> " +
-                $"<size=80%><color=#00BFFF>[Lvl {data.lvl}]</color></size>";
-
-            // Тело: описание и статы
-            tooltip.tooltipContent =
-                $"<i>{data.description}</i>\n\n" +
-                $"<b><color=#32CD32>Здоровье:</color></b> {data.currentHealth}/{data.maxHealth}\n" +
-                $"<b><color=#DC143C>Урон:</color></b> {data.damage}\n" +
-                $"<b><color=#1E90FF>Скорость:</color></b> {data.speed}\n" +
-                $"<b><color=#A9A9A9>Защита:</color></b> {data.defense}\n" +
-                $"<b><color=#FFD700>Стоимость:</color></b> {data.cost}";
+            tooltip.tooltipText =
+             $"<b><color=#FFD700>{data.name}</color></b> " +
+            $"<size=80%><color=#00BFFF>[Lvl {data.lvl}]</color></size>" +
+            $"<i>{data.description}</i>\n\n" +
+            $"<b><color=#32CD32>Здоровье:</color></b> {data.currentHealth}/{data.maxHealth}\n" +
+            $"<b><color=#DC143C>Урон:</color></b> {data.damage}\n" +
+            $"<b><color=#1E90FF>Скорость:</color></b> {data.speed}\n" +
+            $"<b><color=#A9A9A9>Защита:</color></b> {data.defense}\n" +
+            $"<b><color=#FFD700>Стоимость:</color></b> {data.cost}";
         }
     }
 

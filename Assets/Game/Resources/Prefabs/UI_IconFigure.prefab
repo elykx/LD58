@@ -10,8 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 6477933897067666629}
   - component: {fileID: 6913550413770020088}
-  - component: {fileID: 4738064652213437414}
   - component: {fileID: 2353041977995773458}
+  - component: {fileID: 578884553822951379}
   m_Layer: 5
   m_Name: UI_IconFigure
   m_TagString: Untagged
@@ -48,22 +48,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4117834929176569219}
   m_CullTransparentMesh: 1
---- !u!114 &4738064652213437414
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4117834929176569219}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 633443c386aaaf4478b51a904e7e44e3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TooltipTrigger
-  tooltipTitle: 
-  tooltipContent: 
-  customStyle: {fileID: 0}
-  useCustomStyle: 0
 --- !u!114 &2353041977995773458
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78,6 +62,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::FigureIcon
   background: {fileID: 5836967804301544692}
   icon: {fileID: 341102422521702970}
+--- !u!114 &578884553822951379
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4117834929176569219}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e0c26eb83c3fd1e47a440a7d9c60ebd7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TooltipShower
+  tooltipText: 
 --- !u!1 &4358140992629619174
 GameObject:
   m_ObjectHideFlags: 0

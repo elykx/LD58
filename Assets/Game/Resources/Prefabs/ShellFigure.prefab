@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 80701201854080881}
   - component: {fileID: 4121683101503150465}
   - component: {fileID: 77641319575828258}
-  - component: {fileID: -4154338678508379747}
+  - component: {fileID: -5174481747069714383}
   m_Layer: 0
   m_Name: ShellFigure
   m_TagString: Untagged
@@ -151,33 +151,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 817f2cc05565fa64da608e018ba5f7f7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShelfFigure
-  data:
-    id: 123
-    name: 1231
-    sprite: {fileID: 21300000, guid: eaa56a7417ef26a4e835850ad70b95b3, type: 3}
-    cost: 0
-    lvl: 0
-    maxHealth: 10
-    currentHealth: 10
-    damage: 312
-    speed: 312
-    defense: 123
-    battlePosition: 0
-    isEnemy: 0
-    skills:
-    - skillName: Attack
-      description: Attack
-      cooldown: 5
-      type: 0
-      sprite: {fileID: -394536619, guid: 15caa1b5701e10b4096f0f44febbf953, type: 3}
-      power: 12
-      minRange: 0
-      maxRange: 3
-      canTargetAllies: 0
-      canTargetEnemies: 1
-    shelfPosition: {x: 0, y: 0}
+  FigureId: 
   currentSlot: {fileID: 0}
---- !u!114 &-4154338678508379747
+--- !u!114 &-5174481747069714383
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -186,10 +162,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 5949053568404575535}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 633443c386aaaf4478b51a904e7e44e3, type: 3}
+  m_Script: {fileID: 11500000, guid: e0c26eb83c3fd1e47a440a7d9c60ebd7, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TooltipTrigger
-  tooltipTitle: 213321
-  tooltipContent: 123123123
-  customStyle: {fileID: 0}
-  useCustomStyle: 0
+  m_EditorClassIdentifier: Assembly-CSharp::TooltipShower
+  tooltipText: Tooltip text

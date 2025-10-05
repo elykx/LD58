@@ -57,11 +57,10 @@ public class BattleUI : MonoBehaviour
                 figIcon.SetBackground(Color.red);
 
             }
-            var triggerTooltip = icon.GetComponent<TooltipTrigger>();
+            var triggerTooltip = icon.GetComponent<TooltipShower>();
             if (triggerTooltip != null)
             {
-                triggerTooltip.tooltipTitle = figData.name;
-                triggerTooltip.tooltipContent = figData.currentHealth + "/" + figData.maxHealth;
+                triggerTooltip.tooltipText = figData.name + "\n" + figData.currentHealth + "/" + figData.maxHealth;
             }
 
         }
