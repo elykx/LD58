@@ -49,29 +49,26 @@ public class ViewShelfFigure : MonoBehaviour
         {
             // Заголовок: имя + уровень
             tooltip.tooltipText =
-            $"<b><color=#FFD700>{data.name}</color></b> " +
-            $"<size=80%><color=#00BFFF>[Lvl {data.lvl}]</color></size>" +
-            $"<i>{data.description}</i>\n\n" +
-            $"<b><color=#32CD32>Здоровье:</color></b> {data.currentHealth}/{data.maxHealth}\n" +
-            $"<b><color=#DC143C>Урон:</color></b> {data.damage}\n" +
-            $"<b><color=#1E90FF>Скорость:</color></b> {data.speed}\n" +
-            $"<b><color=#A9A9A9>Защита:</color></b> {data.defense}\n" +
-            $"<b><color=#FFD700>Стоимость:</color></b> {data.cost}"
-            ;
+  $"<b><color=#8B4513>{data.name}</color></b> " +
+  $"<size=80%><color=#4682B4> [Lvl {data.lvl}]</color></size> \n" +
+  $"<i><color=#444444>{data.description}</color></i>\n\n" +
+  $"<b><color=#228B22>Health:</color></b> {data.currentHealth}/{data.maxHealth}\n" +
+  $"<b><color=#B22222>Damage:</color></b> {data.damage}\n" +
+  $"<b><color=#1E90FF>Speed:</color></b> {data.speed}\n" +
+  $"<b><color=#696969>Defense:</color></b> {data.defense}\n" +
+  $"<b><color=#DAA520>Cost:</color></b> {data.cost}";
         }
     }
 
     private void Update()
     {
-        if (isBeingDestroyed) return;
-
-
         var figureInDb = G.figureManager.GetFigure(FigureId);
         if (figureInDb == null || figureInDb.currentHealth <= 0)
         {
+            if (isBeingDestroyed) return;
             Debug.Log($"Figure {FigureId} is dead / REMOVE");
-            isBeingDestroyed = true; // <-- УСТАНОВИТЬ ФЛАГ
             G.shelfManager.RemoveFigure(FigureId);
+            isBeingDestroyed = true; // <-- УСТАНОВИТЬ ФЛАГ
             Destroy(gameObject);
             return; // <-- ВЫЙТИ ИЗ UPDATE
         }
@@ -228,6 +225,11 @@ public class ViewShelfFigure : MonoBehaviour
             {
                 Debug.Log("Selling figure " + FigureId);
                 G.shopFigures.SellFigure(FigureId);
+                Debug.Log($"Figure {FigureId} is SELL / REMOVE");
+                G.shelfManager.RemoveFigure(FigureId);
+                isBeingDestroyed = true; // <-- УСТАНОВИТЬ ФЛАГ
+                Destroy(gameObject);
+                return; // <-- ВЫЙТИ ИЗ UPDATE
             }
             else if (currentSlot != null)
             {
@@ -301,5 +303,10 @@ public class ViewShelfFigure : MonoBehaviour
         }
 
         return nearest;
+    }
+
+    internal void AddLvl()
+    {
+        G.figureManager.AddLvl(FigureId);
     }
 }

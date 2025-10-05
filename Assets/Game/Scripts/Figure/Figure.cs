@@ -29,8 +29,9 @@ public class Figure
     // Скиллы
     public List<Skill> skills = new List<Skill>();
     private Dictionary<string, int> skillCooldowns = new Dictionary<string, int>();
+    public FigureClass figureClass;
     // Позиция в шкафу
-    public Figure(){}
+    public Figure() { }
 
     public Figure(string id, string name, int hp, int dmg, int spd, int def, int lvl)
     {
@@ -76,6 +77,16 @@ public class Figure
         {
             skillCooldowns[key] = Mathf.Max(0, skillCooldowns[key] - 1);
         }
+    }
+
+    internal void AddLvl()
+    {
+        lvl++;
+        maxHealth += 10;
+        currentHealth += 10;
+        damage += 5;
+        speed += 1;
+        defense += 1;
     }
 }
 

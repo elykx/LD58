@@ -6,9 +6,14 @@ public class UI : MonoBehaviour
     public TextMeshProUGUI timer;
     public TextMeshProUGUI money;
 
+    public GameObject goHomeButton;
+    public GameObject sleepBattleButton;
+
     private void Awake()
     {
         G.ui = this;
+        goHomeButton.SetActive(false);
+        sleepBattleButton.SetActive(false);
     }
 
 

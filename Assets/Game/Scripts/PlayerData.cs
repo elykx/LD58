@@ -16,4 +16,26 @@ public class PlayerData : MonoBehaviour
     {
         G.playerData = this;
     }
+
+    public string GetLevel()
+    {
+        if (level == 1)
+        {
+            level_id = "level_1";
+        }
+        else if (level == 2)
+        {
+            level_id = "level_2";
+        }
+        else if (level == 3)
+        {
+            level_id = "level_3";
+        }
+        else
+        {
+            level_id = "random_level";
+        }
+
+        return level_id;
+    }
 }

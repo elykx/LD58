@@ -87,7 +87,7 @@ SpriteRenderer:
   m_Size: {x: 1, y: 1}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
 --- !u!1 &5653777198937846599
@@ -231,6 +231,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ViewShopFigure
   FigureId: 
   figureSprite: {fileID: 3319739691470702984}
+  melee: {fileID: 2100000, guid: bbc9305b702123a4da6fca629aeda3da, type: 2}
+  ranged: {fileID: 2100000, guid: 272cff9771f2b1b48a7dea76dade98a4, type: 2}
+  mage: {fileID: 2100000, guid: 0608574067d937c42bcaf3eab63e8147, type: 2}
+  support: {fileID: 2100000, guid: 70b7289b17ae7ed4c8515d68f6701728, type: 2}
+  unique: {fileID: 2100000, guid: f201c177bdae7f14792d1c84f9070814, type: 2}
+  boxSprite: {fileID: 6523191983506322960}
 --- !u!65 &5838267458254345530
 BoxCollider:
   m_ObjectHideFlags: 0

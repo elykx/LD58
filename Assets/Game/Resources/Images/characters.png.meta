@@ -264,7 +264,7 @@ TextureImporter:
       edges: []
       weights: []
     - serializedVersion: 2
-      name: uniq1
+      name: unique
       rect:
         serializedVersion: 2
         x: 197
@@ -379,7 +379,7 @@ TextureImporter:
       mage1: 87006364
       mage2: 1396269937
       mage3: -987061354
-      uniq1: -1398324617
+      unique: -1398324617
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

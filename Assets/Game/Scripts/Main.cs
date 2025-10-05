@@ -21,7 +21,7 @@ public class Main : MonoBehaviour
         // Init
         GameAnalytics.Initialize();
         CMS.Init();
-        
+
         // Start Day Loop
         G.timer.OnNightStart += OnNightStart;
         G.timer.StartDay();
@@ -51,6 +51,7 @@ public class Main : MonoBehaviour
     private void OnNightStart()
     {
         nightReady = true;
+        G.ui.sleepBattleButton.SetActive(true);
     }
 
     public void StartBattle()
@@ -58,8 +59,9 @@ public class Main : MonoBehaviour
         if (nightReady)
         {
             G.cameraMove.MoveCameraToBed();
-            G.battleSystem.StartBattle(LevelManager.GetLevelById("level_1"));
+            G.battleSystem.StartBattle(LevelManager.GetLevelById(G.playerData.GetLevel()));
             G.playerData.current_pos = "battle";
+            G.ui.sleepBattleButton.SetActive(false);
         }
     }
 
@@ -78,6 +80,7 @@ public class Main : MonoBehaviour
     {
         if (G.playerData.current_pos != "main" || G.playerData.shopAlreadyOpened) return;
         G.cameraMove.MoveCameraToShop();
+        G.ui.goHomeButton.SetActive(true);
         shop.SetActive(true);
         disableWhenShopOpen.SetActive(false);
         G.shopFigures.GenerateShopFigures(G.playerData.level);
@@ -88,6 +91,7 @@ public class Main : MonoBehaviour
     public void CloseShop()
     {
         shop.SetActive(false);
+        G.ui.goHomeButton.SetActive(false);
         disableWhenShopOpen.SetActive(true);
         G.cameraMove.MoveCameraToBase();
         G.playerData.current_pos = "main";

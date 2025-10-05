@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -28,5 +29,11 @@ public class FigureManager : MonoBehaviour
     public void RemoveFigureById(string id)
     {
         figures.RemoveAll(f => f.id == id);
+    }
+
+    internal void AddLvl(string figureId)
+    {
+        var figure = GetFigure(figureId);
+        figure.AddLvl();
     }
 }

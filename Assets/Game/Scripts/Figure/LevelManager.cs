@@ -36,30 +36,23 @@ public static class LevelManager
             "level_2",
             2,
             "Второй уровень - немного сложнее",
-            new List<string> { "skeleton", "archer" },
+            new List<string> { "rabbit", "demon" },
             new BattleReward(100, 20, new List<string> { "potion_mana_small" })
         ),
         new LevelData(
             "level_3",
             3,
             "Третий уровень - маги появляются",
-            new List<string> { "mage", "skeleton", "skeleton" },
+            new List<string> { "rat", "demon", "ghost" },
             new BattleReward(150, 30, new List<string> { "sword_wooden" })
         ),
         new LevelData(
-            "level_4",
+            "random",
             4,
             "Четвертый уровень - армия скелетов",
-            new List<string> { "skeleton", "skeleton", "skeleton", "archer" },
+            new List<string> { "rat", "dog", "ghost", "demon" },
             new BattleReward(200, 40, new List<string> { "armor_leather" })
         ),
-        new LevelData(
-            "level_5",
-            5,
-            "Пятый уровень - босс-маг",
-            new List<string> { "mage_boss" },
-            new BattleReward(500, 100, new List<string> { "staff_magic" })
-        )
     };
 
     // Метод для получения уровня по его ID

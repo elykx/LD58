@@ -16,6 +16,12 @@ public class ViewShopFigure : MonoBehaviour
     private float baseSway = 10f;
     private float dragSway = 25f;
     private float swayDuration = 1f;
+    public Material melee;
+    public Material ranged;
+    public Material mage;
+    public Material support;
+    public Material unique;
+    public SpriteRenderer boxSprite;
 
 
     private void Awake()
@@ -26,7 +32,30 @@ public class ViewShopFigure : MonoBehaviour
 
     void Start()
     {
-        figureSprite.sprite = G.figureManager.GetFigure(FigureId).sprite;
+        var fig = G.figureManager.GetFigure(FigureId);
+        figureSprite.sprite = fig.sprite;
+        Material boxMat = boxSprite.material;
+        switch (fig.figureClass)
+        {
+            case FigureClass.Melee:
+                boxMat = melee;
+                break;
+            case FigureClass.Ranged:
+                boxMat = ranged;
+                break;
+            case FigureClass.Mage:
+                boxMat = mage;
+                break;
+            case FigureClass.Support:
+                boxMat = support;
+                break;
+            case FigureClass.Unique:
+                boxMat = unique;
+                break;
+        }
+
+        boxSprite.material = boxMat;
+
         originalPos = transform.position;
         tooltip = GetComponent<TooltipShower>();
         UpdateTooltip();
@@ -41,14 +70,14 @@ public class ViewShopFigure : MonoBehaviour
         {
             // Заголовок: имя + уровень
             tooltip.tooltipText =
-             $"<b><color=#FFD700>{data.name}</color></b> " +
-            $"<size=80%><color=#00BFFF>[Lvl {data.lvl}]</color></size>" +
-            $"<i>{data.description}</i>\n\n" +
-            $"<b><color=#32CD32>Здоровье:</color></b> {data.currentHealth}/{data.maxHealth}\n" +
-            $"<b><color=#DC143C>Урон:</color></b> {data.damage}\n" +
-            $"<b><color=#1E90FF>Скорость:</color></b> {data.speed}\n" +
-            $"<b><color=#A9A9A9>Защита:</color></b> {data.defense}\n" +
-            $"<b><color=#FFD700>Стоимость:</color></b> {data.cost}";
+    $"<b><color=#8B4513>{data.name}</color></b> " +
+    $"<size=80%><color=#4682B4>[Lvl {data.lvl}]</color></size>" +
+    $"<i><color=#444444>{data.description}</color></i>\n\n" +
+    $"<b><color=#228B22>Health:</color></b> {data.currentHealth}/{data.maxHealth}\n" +
+    $"<b><color=#B22222>Damage:</color></b> {data.damage}\n" +
+    $"<b><color=#1E90FF>Speed:</color></b> {data.speed}\n" +
+    $"<b><color=#696969>Defense:</color></b> {data.defense}\n" +
+    $"<b><color=#DAA520>Cost:</color></b> {data.cost}";
         }
     }
 

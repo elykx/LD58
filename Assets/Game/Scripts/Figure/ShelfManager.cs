@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,7 +7,7 @@ public class ShelfManager : MonoBehaviour
     [Header("Слоты шкафа")]
     [SerializeField] private List<ShelfSlot> slots;
     public SellArea sellArea;
-    public int currentNumFiguresInShelf = 0;
+    public int currentNumFiguresInShelf => GetNumFiguresInShelf();
 
 
     void Awake()
@@ -27,7 +28,7 @@ public class ShelfManager : MonoBehaviour
         newFigure.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
         slot.PlaceFigure(newFigure);
-        currentNumFiguresInShelf++;
+        // currentNumFiguresInShelf++;
         return true;
     }
 
@@ -44,7 +45,7 @@ public class ShelfManager : MonoBehaviour
                 newFigure.FigureId = figureId;
                 newFigure.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
 
-                currentNumFiguresInShelf++;
+                // currentNumFiguresInShelf++;
                 slot.PlaceFigure(newFigure);
                 return true;
             }
@@ -95,7 +96,7 @@ public class ShelfManager : MonoBehaviour
         if (slot.IsEmpty) return false;
 
         slot.Clear();
-        currentNumFiguresInShelf--;
+        // currentNumFiguresInShelf--;
         return true;
     }
 
@@ -128,6 +129,19 @@ public class ShelfManager : MonoBehaviour
         sellArea.gameObject.SetActive(false);
     }
 
+    public int GetNumFiguresInShelf()
+    {
+        int num = 0;
+        foreach (var slot in slots)
+        {
+            if (!slot.IsEmpty)
+            {
+                num++;
+            }
+        }
+        return num;
+    }
+
     public bool CheckFull()
     {
         if (currentNumFiguresInShelf >= slots.Count)
@@ -137,6 +151,18 @@ public class ShelfManager : MonoBehaviour
         else
         {
             return false;
+        }
+    }
+
+    internal void AddLvl()
+    {
+        for (int i = 0; i >= 3 ; i++)
+        {
+            var fig = G.shelfManager.GetFigureFromSlot(i);
+            if (fig != null)
+            {
+                fig.AddLvl();
+            }
         }
     }
 }

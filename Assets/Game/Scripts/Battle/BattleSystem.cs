@@ -312,17 +312,31 @@ public class BattleSystem : MonoBehaviour
 
     private List<BattleFighterData> GetValidTargets(BattleFighterData actor, Skill skill)
     {
-        bool isPlayerTeam = !actor.figure.isEnemy;
-        var targetPool = isPlayerTeam
-            ? allFighters.Where(f => f.figure.isEnemy)
-            : allFighters.Where(f => !f.figure.isEnemy);
+        if (skill == null) return new List<BattleFighterData>();
 
-        return targetPool
-            .Where(f => !f.isDead &&
-                        f.figure.IsAlive() &&
-                        f.figure.battlePosition >= skill.minRange &&
-                        f.figure.battlePosition <= skill.maxRange)
-            .ToList();
+        List<BattleFighterData> targetPool;
+
+        switch (skill.type)
+        {
+            case Skill.SkillType.Attack:
+            case Skill.SkillType.Debuff:
+                // Атакуем только противоположную команду
+                targetPool = allFighters.Where(f => f.figure.isEnemy != actor.figure.isEnemy).ToList();
+                break;
+
+            case Skill.SkillType.Heal:
+            case Skill.SkillType.Buff:
+                // Лечим / бафаем только союзников
+                targetPool = allFighters.Where(f => f.figure.isEnemy == actor.figure.isEnemy).ToList();
+                break;
+
+            default:
+                targetPool = new List<BattleFighterData>();
+                break;
+        }
+
+        // Только живые цели
+        return targetPool.Where(f => !f.isDead && f.figure.IsAlive()).ToList();
     }
 
     private float CalculateTargetScore(BattleFighterData actor, BattleFighterData target, Skill skill)
@@ -373,7 +387,19 @@ public class BattleSystem : MonoBehaviour
 
     private IEnumerator ExecuteAttack(BattleFighterData actor, BattleFighterData target, Skill skill)
     {
-        yield return actor.view.AttackAnimation(target.view.transform.position);
+        // Проверяем минимальную дальность скилла - если больше 0, это дальняя атака
+        bool isRanged = skill.minRange > 0;
+
+        if (isRanged)
+        {
+            // Дальнобойная атака - создаём снаряд
+            yield return actor.view.RangedAttackAnimation(target.view.transform.position, skill);
+        }
+        else
+        {
+            // Ближний бой - двигаемся к цели
+            yield return actor.view.AttackAnimation(target.view.transform.position);
+        }
 
         int damage = Mathf.Max(1, actor.figure.damage / 2 + skill.power - target.figure.defense / 2);
         target.figure.TakeDamage(damage);
@@ -383,7 +409,7 @@ public class BattleSystem : MonoBehaviour
 
         if (!target.figure.IsAlive())
         {
-            target.isDead = true; // ИСПРАВЛЕНИЕ: Помечаем как мёртвого
+            target.isDead = true;
             target.view.PlayDeathAnimation();
             G.figureManager.RemoveFigureById(target.figure.id);
             yield return new WaitForSeconds(0.5f);
@@ -431,6 +457,9 @@ public class BattleSystem : MonoBehaviour
         {
             state = BattleState.Victory;
             battleUI?.SetBattleState(state);
+            G.playerData.level++;
+            G.playerData.money += currentLevel.reward.gold;
+            G.shelfManager.AddLvl();
 
             var reward = new BattleReward
             {
