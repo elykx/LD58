@@ -26,18 +26,18 @@ MonoBehaviour:
   UserMessagesFailed: 0
   CustomArea: 
   gameKey:
-  - ca566f3ea449ed5dc382972e36a13fd5
+  - f3a4ad4f2c9ca8aefb0ad020ca733741
   secretKey:
-  - 20d9cad085bd2750a6c55d24cd2cc3988fed6e2b
+  - e7f3854a1c53b83079ef4679753727da53e5f1d8
   Build:
-  - 0.1
+  - 1.0
   SelectedPlatformOrganization:
   - elykx
   SelectedPlatformStudio:
   - elykx
   SelectedPlatformGame:
-  - test
-  SelectedPlatformGameID: 4c030500
+  - ld58
+  SelectedPlatformGameID: 77030500
   SelectedOrganization: 01000000
   SelectedStudio: 01000000
   SelectedGame: 01000000

@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using GameAnalyticsSDK;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -467,6 +468,8 @@ public class BattleSystem : MonoBehaviour
                 experience = currentLevel.reward.experience
             };
             OnBattleVictory?.Invoke(reward);
+            GameAnalytics.NewDesignEvent($"level:completed:{G.playerData.level}");
+
             StartCoroutine(DelayedEndBattle());
         }
     }
