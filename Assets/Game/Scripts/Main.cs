@@ -58,6 +58,7 @@ public class Main : MonoBehaviour
     {
         if (nightReady)
         {
+            G.ui.goHomeButton.SetActive(false);
             G.cameraMove.MoveCameraToBed();
             G.battleSystem.StartBattle(LevelManager.GetLevelById(G.playerData.GetLevel()));
             G.playerData.current_pos = "battle";
@@ -71,6 +72,13 @@ public class Main : MonoBehaviour
         G.timer.StartDay();
         G.battleSystem.EndBattle();
         G.cameraMove.MoveCameraToBase();
+        foreach (var figure in G.figureManager.figures)
+        {
+            if (figure.isEnemy)
+            {
+                G.figureManager.RemoveFigureById(figure.id);
+            }
+        }
         G.playerData.current_pos = "main";
         G.playerData.shopAlreadyOpened = false;
         Debug.Log("Бой завершён, день пошёл заново!");

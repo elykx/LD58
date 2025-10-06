@@ -23,6 +23,13 @@ public class LevelData
 
 public static class LevelManager
 {
+    private static List<string> allEnemies = new List<string> { "rat", "dog", "ghost", "demon", "rabbit" };
+    private static Random random = new Random();
+
+    private static List<string> GetRandomEnemies(int count)
+    {
+        return allEnemies.OrderBy(x => random.Next()).Take(count).ToList();
+    }
     public static List<LevelData> Levels = new List<LevelData>()
     {
         new LevelData(
@@ -47,10 +54,10 @@ public static class LevelManager
             new BattleReward(150, 30, new List<string> { "sword_wooden" })
         ),
         new LevelData(
-            "random",
+            "random_level",
             4,
             "Четвертый уровень - армия скелетов",
-            new List<string> { "rat", "dog", "ghost", "demon" },
+            GetRandomEnemies(4),
             new BattleReward(200, 40, new List<string> { "armor_leather" })
         ),
     };
